@@ -2,38 +2,24 @@
 <html>
     <head>
         <meta charset=utf-8>
-        <title>Forms</title>
+        <title>apronymer</title>
     </head>
     <body>
-        <h3>Will hit handle_post_1</h3>
-        <form action=/post1 method=POST>
-            <label>
-                Name:
-                <input name="name">
+        <h3>Input</h3>
+        <form action=/input method=POST>
+            <label for="tags" type="text">tags:
+                <textarea name="tags" cols="40" rows="5"></textarea>
             </label>
-            <button type=submit>Submit form</button>
-        </form>
-
-        <hr>
-
-        <h3>Will hit handle_post_2</h3>
-        <form action=/post2 method=POST>
-            <label>
-                Name:
-                <input name="name">
+            <br>
+            <label for="length" type="text">length:
+                <input name="lenght" type="text"></textarea>
             </label>
-            <button type=submit>Submit form</button>
-        </form>
-
-        <hr>
-
-        <h3>Will hit handle_post_3</h3>
-        <form action=/post3 method=POST>
-            <label>
-                Name:
-                <input name="name">
+            <br>
+            <label for="count" type="text">count:
+                <input name="lenght" type="text"></textarea>
             </label>
-            <button type=submit>Submit form</button>
+            <br>
+            <button type=submit>submit</button>
         </form>
     </body>
 </html>
