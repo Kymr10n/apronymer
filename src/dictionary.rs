@@ -25,8 +25,3 @@ pub fn is_valid_word(word: &str) -> bool {
         .unwrap()
         .contains(&word.to_uppercase())
 }
-
-/// Expose this for testing / debug if needed
-pub fn word_count() -> usize {
-    DICTIONARY.read().unwrap().len()
-}
