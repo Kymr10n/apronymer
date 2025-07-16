@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use crate::dictionary::is_valid_word;
 
 /// Generate possible apronyms based on input terms
 pub fn generate_apronyms(terms: Vec<String>, min_len: usize, max_len: usize) -> Vec<String> {
@@ -17,7 +16,7 @@ pub fn generate_apronyms(terms: Vec<String>, min_len: usize, max_len: usize) -> 
 
     // Cartesian product of variants
     for combo in term_variants.iter().multi_cartesian_product() {
-        let candidate = combo.join("");
+        let candidate = combo.iter().map(|s| s.as_str()).collect::<String>();
         if candidate.len() >= min_len && candidate.len() <= max_len {
             // Here you’d check against a dictionary
             if is_valid_word(&candidate) {

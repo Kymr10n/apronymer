@@ -3,9 +3,14 @@ use tower_http::services::ServeDir;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
+mod routes;
+mod generator;
+mod dictionary;
+
 #[tokio::main]
 async fn main() {
     let app = Router::new()
+        .nest("/api", routes::routes())  // 👈 Mount your API routes
         .route("/hello", get(|| async { "Hello Axum 0.8!" }))
         .fallback_service(ServeDir::new("static"));
 
