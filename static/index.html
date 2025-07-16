@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apronymer Generator</title>
+</head>
+<body>
+    <h1>Apronymer Generator</h1>
+
+    <form id="apronym-form">
+        <label>Terms (comma separated):</label><br>
+        <input type="text" id="terms" size="50"><br><br>
+
+        <label>Min Length:</label><br>
+        <input type="number" id="minlen" value="3"><br><br>
+
+        <label>Max Length:</label><br>
+        <input type="number" id="maxlen" value="6"><br><br>
+
+        <button type="submit">Generate</button>
+    </form>
+
+    <h2>Results:</h2>
+    <ul id="results"></ul>
+
+    <script>
+        document.getElementById('apronym-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const terms = document.getElementById('terms').value.split(',').map(t => t.trim());
+            const minlen = parseInt(document.getElementById('minlen').value);
+            const maxlen = parseInt(document.getElementById('maxlen').value);
+
+            const response = await fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ terms, min_len: minlen, max_len: maxlen })
+            });
+
+            const result = await response.json();
+
+            const resultsList = document.getElementById('results');
+            resultsList.innerHTML = '';
+            result.forEach(word => {
+                const li = document.createElement('li');
+                li.textContent = word;
+                resultsList.appendChild(li);
+            });
+        });
+    </script>
+</body>
+</html>
