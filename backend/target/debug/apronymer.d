@@ -1,0 +1,1 @@
+/home/alex/Projects/apronymer/backend/target/debug/apronymer: /home/alex/Projects/apronymer/backend/src/dictionary.rs /home/alex/Projects/apronymer/backend/src/generator.rs /home/alex/Projects/apronymer/backend/src/main.rs /home/alex/Projects/apronymer/backend/src/routes.rs

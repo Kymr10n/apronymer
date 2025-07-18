@@ -1,0 +1,1 @@
+fn(Json<GenerateRequest>) -> impl Future<Output = Json<Vec<Apronym>>> {generate}: Handler<_, _>

@@ -1,21 +1,23 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug Apronymer Webserver",
-            "program": "${workspaceFolder}/target/debug/apronymer",
-            "cargo": {
-                "args": ["build"],
-                "filter": {
-                    "name": "apronymer",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}",
-            "terminal": "integrated"
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Backend + Run Frontend",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/target/debug/apronymer",
+      "args": [],
+      "cwd": "${workspaceFolder}/backend",
+      "preLaunchTask": "Run Frontend",
+      "cargo": {
+        "args": ["build"],
+        "filter": {
+          "name": "apronymer",
+          "kind": "bin"
+        },
+        "workspaceRoot": "${workspaceFolder}/backend"
+      },
+      "terminal": "integrated"
+    }
+  ]
 }

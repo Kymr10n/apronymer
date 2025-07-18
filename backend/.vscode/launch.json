@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Apronymer Webserver",
+            "program": "${workspaceFolder}/target/debug/apronymer",
+            "cargo": {
+                "args": ["build"],
+                "filter": {
+                    "name": "apronymer",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "terminal": "integrated"
+        }
+    ]
+}

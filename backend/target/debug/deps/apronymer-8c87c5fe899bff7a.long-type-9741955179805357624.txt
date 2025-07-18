@@ -1,0 +1,1 @@
+fn(axum::Json<GenerateRequest>) -> impl Future<Output = axum::Json<Vec<Apronym>>> {generate}: Handler<_, _>
