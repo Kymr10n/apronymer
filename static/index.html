@@ -6,17 +6,17 @@
     <title>Apronymer Generator</title>
 </head>
 <body>
-    <h1>Apronymer Generator</h1>
+    <h1>Apronymer Generator v0.1</h1>
 
     <form id="apronym-form">
         <label>Terms (comma separated):</label><br>
-        <input type="text" id="terms" size="50"><br><br>
+        <input type="text" id="terms" size="50" required><br><br>
 
         <label>Min Length:</label><br>
-        <input type="number" id="minlen" value="3"><br><br>
+        <input type="number" id="minlen" value="2" min="1"><br><br>
 
         <label>Max Length:</label><br>
-        <input type="number" id="maxlen" value="6"><br><br>
+        <input type="number" id="maxlen" value="4" min="1"><br><br>
 
         <button type="submit">Generate</button>
     </form>
@@ -25,29 +25,53 @@
     <ul id="results"></ul>
 
     <script>
-        document.getElementById('apronym-form').addEventListener('submit', async function (e) {
-            e.preventDefault();
+    document.getElementById('apronym-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
 
-            const terms = document.getElementById('terms').value.split(',').map(t => t.trim());
-            const minlen = parseInt(document.getElementById('minlen').value);
-            const maxlen = parseInt(document.getElementById('maxlen').value);
+        const termsInput = document.getElementById('terms').value;
+        const terms = termsInput
+            .split(',')
+            .map(t => t.trim())
+            .filter(t => t.length > 0);
 
-            const response = await fetch('/api/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ terms, min_len: minlen, max_len: maxlen })
-            });
+        const minlen = parseInt(document.getElementById('minlen').value);
+        const maxlen = parseInt(document.getElementById('maxlen').value);
 
-            const result = await response.json();
+        if (terms.length === 0) {
+            alert("Please enter at least one term.");
+            return;
+        }
 
-            const resultsList = document.getElementById('results');
-            resultsList.innerHTML = '';
-            result.forEach(word => {
-                const li = document.createElement('li');
-                li.textContent = word;
-                resultsList.appendChild(li);
-            });
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ terms, min_len: minlen, max_len: maxlen })
         });
+
+        if (!response.ok) {
+            alert("Error fetching apronyms.");
+            return;
+        }
+
+        const result = await response.json();
+
+        const resultsList = document.getElementById('results');
+        resultsList.innerHTML = '';
+        
+        console.log(result);
+        
+        result.forEach(apronym => {
+            const li = document.createElement('li');
+            li.textContent = `${apronym.name}: ${apronym.terms.join(', ')}`;
+            resultsList.appendChild(li);
+        });
+
+        if (result.length === 0) {
+            const li = document.createElement('li');
+            li.textContent = "No valid apronyms found.";
+            resultsList.appendChild(li);
+        }
+    });
     </script>
 </body>
 </html>
