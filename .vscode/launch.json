@@ -9,7 +9,8 @@
       "program": "${workspaceFolder}/target/debug/apronymer.exe",
       "args": [],
       "cwd": "${workspaceFolder}/backend",
-      "preLaunchTask": "Build Backend",
+      "preLaunchTask": "Run Frontend",
+      "postDebugTask": "Build Backend",
       "terminal": "integrated"
     }
   ]
