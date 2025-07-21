@@ -1,22 +1,15 @@
 {
   "version": "0.2.0",
   "configurations": [
+    
     {
       "name": "Debug Backend + Run Frontend",
       "type": "lldb",
       "request": "launch",
-      "program": "${workspaceFolder}/backend/target/debug/apronymer",
+      "program": "${workspaceFolder}/target/debug/apronymer.exe",
       "args": [],
       "cwd": "${workspaceFolder}/backend",
-      "preLaunchTask": "Run Frontend",
-      "cargo": {
-        "args": ["build"],
-        "filter": {
-          "name": "apronymer",
-          "kind": "bin"
-        },
-        "workspaceRoot": "${workspaceFolder}/backend"
-      },
+      "preLaunchTask": "Build Backend",
       "terminal": "integrated"
     }
   ]

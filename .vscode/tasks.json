@@ -8,7 +8,11 @@
       "options": {
         "cwd": "${workspaceFolder}/backend"
       },
-      "problemMatcher": [],
+      "problemMatcher": ["$rustc"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "presentation": {
         "panel": "shared"
       }
@@ -20,11 +24,25 @@
       "options": {
         "cwd": "${workspaceFolder}/frontend"
       },
-      "problemMatcher": [],
-      "presentation": {
-        "panel": "shared"
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Backend + Frontend",
+      "dependsOn": [
+        "Run Frontend"
+      ],
+      "dependsOrder": "sequence"
+    },
+    {
+      "label": "Build Backend",
+      "type": "shell",
+      "command": "cargo build",
+      "options": {
+        "cwd": "${workspaceFolder}"
       },
-      "isBackground": true
+      "problemMatcher": ["$rustc"],
+      "group": "build"
     }
   ]
 }
