@@ -1,1 +1,57 @@
-/target
+# --------------------
+# Rust (Backend)
+# --------------------
+/backend/target/
+/backend/.cargo-lock
+**/*.rs.bk
+**/*.rs~
+
+# If using VS Code Debug/LLDB in backend
+/backend/.vscode/launch.json
+/backend/.vscode/tasks.json
+
+# --------------------
+# Node.js / Frontend (Vite + React)
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.cache/
+/frontend/.vite/
+
+# Optional: lock files from outdated tooling
+/frontend/package-lock.json.backup
+
+# --------------------
+# IDE Files
+# --------------------
+.vscode/
+.idea/
+*.swp
+*~
+
+# --------------------
+# OS / Misc Files
+# --------------------
+.DS_Store
+Thumbs.db
+
+# --------------------
+# Logs
+# --------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# --------------------
+# Environment Files
+# --------------------
+.env
+.env.*
+/frontend/.env.local
+/backend/.env.local
+
+# --------------------
+# Optional: Monorepo Workspace
+# --------------------
+*.code-workspace
+

@@ -4,6 +4,7 @@ use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
 mod routes;
+mod validator;
 mod generator;
 mod dictionary;
 
