@@ -2,6 +2,7 @@ use axum::{http::StatusCode, response::{IntoResponse, Response}};
 use crate::routes::GenerateRequest;
 use std::collections::HashSet;
 
+/// Validate the GenerateRequest payload
 pub fn validate_generate_request(payload: &GenerateRequest) -> Result<(), Response> {
     if payload.terms.is_empty() {
         return Err((StatusCode::BAD_REQUEST, "Please enter at least one valid term.").into_response());

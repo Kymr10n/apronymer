@@ -17,6 +17,7 @@ pub struct Apronym {
     pub terms: Vec<String>,
 }
 
+/// Handler to generate apronyms based on input terms
 pub async fn generate(Json(payload): Json<GenerateRequest>) -> impl IntoResponse {
     if let Err(err) = validate_generate_request(&payload) {
         return err;
@@ -26,6 +27,7 @@ pub async fn generate(Json(payload): Json<GenerateRequest>) -> impl IntoResponse
     Json(results).into_response()
 }
 
+/// Define the API routes for the application
 pub fn routes() -> Router {
     Router::new().route("/generate", post(generate))
 }
