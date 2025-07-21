@@ -2,11 +2,11 @@
 # Rust (Backend)
 # --------------------
 /backend/target/
-/backend/.cargo-lock
+/backend/Cargo.lock     # ✅ This is the correct lock file name
 **/*.rs.bk
 **/*.rs~
 
-# If using VS Code Debug/LLDB in backend
+# VS Code Debug/LLDB configs (keep only if not shared)
 /backend/.vscode/launch.json
 /backend/.vscode/tasks.json
 
@@ -16,15 +16,14 @@
 /frontend/dist/
 /frontend/.cache/
 /frontend/.vite/
-
-# Optional: lock files from outdated tooling
+/frontend/.turbo/      # ✅ For TurboRepo/Vite monorepo if ever used
 /frontend/package-lock.json.backup
 
 # --------------------
-# IDE Files
-# --------------------
-.vscode/
+# IDE Files (global)
+/.vscode/               # ✅ At root
 .idea/
+/*.code-workspace       # ✅ All workspace files in root
 *.swp
 *~
 
@@ -49,9 +48,4 @@ pnpm-debug.log*
 .env.*
 /frontend/.env.local
 /backend/.env.local
-
-# --------------------
-# Optional: Monorepo Workspace
-# --------------------
-*.code-workspace
-
+backend/Cargo.lock

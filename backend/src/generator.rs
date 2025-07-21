@@ -51,3 +51,39 @@ fn terms_by_indices(indices: &[usize], terms: &[String]) -> Vec<String> {
         .filter_map(|&i| terms.get(i).cloned())
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+ 
+    #[test]
+    fn test_generate_apronyms_valid_input() {
+        let terms = vec!["Alpha".to_string(), "Echo".to_string(), "India".to_string()];
+        let results = generate_apronyms(terms, 2, 3);
+        // Can't assert exact contents due to dictionary check, but should not panic
+        assert!(!results.is_empty());
+    }
+
+    #[test]
+    fn test_generate_apronyms_empty_terms() {
+        let terms: Vec<String> = vec![];
+        let results = generate_apronyms(terms, 1, 3);
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_permutate_creates_correct_length() {
+        let terms = vec!["Alpha".to_string(), "Echo".to_string(), "India".to_string()];
+        let variants = permutate(terms.iter().count(), 2, 3);
+        assert!(variants.iter().all(|idx| idx.len() >= 2 && idx.len() <= 3));
+    }
+
+    #[test]
+    fn test_match_terms_filters_valid_words() {
+        let terms = vec!["Alpha".to_string(), "Echo".to_string(), "India".to_string()];
+        let indices = vec![vec![0, 1, 2]];  // assuming indices into terms
+        let matches = match_terms(indices, &terms);
+        // Will be empty unless "AEI" exists in dictionary
+        assert!(matches.is_empty());
+    }
+}

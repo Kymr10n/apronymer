@@ -47,3 +47,64 @@ pub fn validate_generate_request(payload: &GenerateRequest) -> Result<(), Respon
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::routes::GenerateRequest;
+
+    fn valid_request() -> GenerateRequest {
+        GenerateRequest {
+            terms: vec!["Alpha".to_string(), "Echo".to_string(), "India".to_string()],
+            min_len: 2,
+            max_len: 3,
+        }
+    }
+
+    #[test]
+    fn test_valid_request_passes() {
+        let req = valid_request();
+        assert!(validate_generate_request(&req).is_ok());
+    }
+
+    #[test]
+    fn test_empty_terms_fails() {
+        let req = GenerateRequest { terms: vec![], min_len: 2, max_len: 3 };
+        assert!(validate_generate_request(&req).is_err());
+    }
+
+    #[test]
+    fn test_duplicate_terms_fails() {
+        let req = GenerateRequest {
+            terms: vec!["Alpha".to_string(), "Alpha".to_string()],
+            min_len: 1,
+            max_len: 1,
+        };
+        assert!(validate_generate_request(&req).is_err());
+    }
+
+    #[test]
+    fn test_invalid_length_fails() {
+        let mut req = valid_request();
+        req.min_len = 0;
+        assert!(validate_generate_request(&req).is_err());
+
+        req.min_len = 5;
+        req.max_len = 4;
+        assert!(validate_generate_request(&req).is_err());
+    }
+
+    #[test]
+    fn test_non_alphabetic_terms_fail() {
+        let mut req = valid_request();
+        req.terms = vec!["123".to_string(), "Test".to_string()];
+        assert!(validate_generate_request(&req).is_err());
+    }
+
+    #[test]
+    fn test_missing_vowel_start_fails() {
+        let mut req = valid_request();
+        req.terms = vec!["Beta".to_string(), "Charlie".to_string()];
+        assert!(validate_generate_request(&req).is_err());
+    }
+}
