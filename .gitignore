@@ -50,3 +50,4 @@ pnpm-debug.log*
 /backend/.env.local
 target/debug/
 /target/
+target/.rustc_info.json
