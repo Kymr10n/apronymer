@@ -1,9 +1,12 @@
 use axum::{http::StatusCode, response::{IntoResponse, Response}};
 use crate::routes::GenerateRequest;
 use std::collections::HashSet;
+use tracing;
 
 /// Validate the GenerateRequest payload
 pub fn validate_generate_request(payload: &GenerateRequest) -> Result<(), Response> {
+    tracing::info!("Validating generate request: terms={:?}, min_len={}, max_len={}", payload.terms, payload.min_len, payload.max_len);
+
     if payload.terms.is_empty() {
         return Err((StatusCode::BAD_REQUEST, "Please enter at least one valid term.").into_response());
     }
