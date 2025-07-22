@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FiDownload, FiCopy } from "react-icons/fi";
 
 interface Apronym {
-  name: string;
+  text: string;
   terms: string[];
 }
 
@@ -196,7 +196,7 @@ export default function ApronymForm() {
             className="p-2 rounded hover:bg-gray-200"
             onClick={() => {
               if (results.length === 0) return;
-              const text = results.map(r => `${r.name}: ${r.terms.join(", ")}`).join("\n");
+              const text = results.map(r => `${r.text}: ${r.terms.join(", ")}`).join("\n");
               navigator.clipboard.writeText(text);
             }}
             disabled={results.length === 0}
@@ -209,7 +209,7 @@ export default function ApronymForm() {
             className="p-2 rounded hover:bg-gray-200"
             onClick={() => {
               if (results.length === 0) return;
-              const text = results.map(r => `${r.name}: ${r.terms.join(", ")}`).join("\n");
+              const text = results.map(r => `${r.text}: ${r.terms.join(", ")}`).join("\n");
               const blob = new Blob([text], { type: "text/plain" });
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
