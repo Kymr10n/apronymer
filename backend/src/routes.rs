@@ -1,4 +1,4 @@
-use axum::{Json, Router, response::IntoResponse, routing::post};
+use axum::{Json, Router, response::{IntoResponse, Response}, routing::post, http::StatusCode};
 use serde::{Deserialize, Serialize};
 use tracing;
 
@@ -32,5 +32,6 @@ pub async fn generate(Json(payload): Json<GenerateRequest>) -> impl IntoResponse
 
 /// Define the API routes for the application
 pub fn routes() -> Router {
-    Router::new().route("/generate", post(generate))
+    Router::new()
+        .route("/generate", post(generate))
 }
