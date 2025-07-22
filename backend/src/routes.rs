@@ -1,5 +1,5 @@
 // Route handlers and API types for the backend
-use axum::{Json, Router, response::{IntoResponse, Response}, routing::post, http::StatusCode};
+use axum::{Json, Router, response::IntoResponse, routing::post};
 use serde::{Deserialize, Serialize};
 use tracing;
 
