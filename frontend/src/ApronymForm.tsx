@@ -8,7 +8,7 @@ interface Apronym {
 
 export default function ApronymForm() {
   const [terms, setTerms] = useState("");
-  const [termLen, setTermLen] = useState(1);
+  const [fragLen, setFragLen] = useState(1);
   const [minLen, setMinLen] = useState(2);
   const [maxLen, setMaxLen] = useState(4);
   const [results, setResults] = useState<Apronym[]>([]);
@@ -16,7 +16,7 @@ export default function ApronymForm() {
 
   const [lastRequest, setLastRequest] = useState<{
     terms: string[];
-    termLen: number;
+    fragLen: number;
     minLen: number;
     maxLen: number;
   } | null>(null);
@@ -51,8 +51,8 @@ export default function ApronymForm() {
       return;
     }
 
-    if (termLen < 1 || termLen > 3) {
-      alert("Term Length must be between 1 and 3.");
+    if (fragLen < 1 || fragLen > 3) {
+      alert("Fragment Length must be between 1 and 3.");
       return;
     }
 
@@ -66,8 +66,8 @@ export default function ApronymForm() {
       return;
     }
 
-    if (uniqueTerms.length < maxLen) {
-      alert("The number of terms must be greater than or equal to Max Length.");
+    if (maxLen > uniqueTerms.length) {
+      alert("Max Length cannot exceed the number of terms provided.");
       return;
     }
 
@@ -77,9 +77,9 @@ export default function ApronymForm() {
       return;
     }
 
-    const maxPossibleLength = termLen * validTerms.length;
+    const maxPossibleLength = fragLen * validTerms.length;
     if (maxLen > maxPossibleLength) {
-      alert(`Max Length cannot exceed ${maxPossibleLength} (Term Length × Number of Terms).`);
+      alert(`Max Length cannot exceed ${maxPossibleLength} (Fragment Length × Number of Terms).`);
       return;
     }
 
@@ -91,7 +91,7 @@ export default function ApronymForm() {
 
     const requestPayload = {
       terms: validTerms,
-      termLen,
+      fragLen,
       minLen,
       maxLen,
     };
@@ -114,7 +114,7 @@ export default function ApronymForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           terms: validTerms,
-          term_len: termLen,
+          frag_len: fragLen,
           min_len: minLen,
           max_len: maxLen,
         }),
@@ -146,11 +146,11 @@ export default function ApronymForm() {
           />
         </div>
         <div>
-          <label className="block font-semibold">Term Length (1=first letter, 2=first two letters, 3=first three letters):</label>
+          <label className="block font-semibold">Fragment Length:</label>
           <input
             type="number"
-            value={termLen}
-            onChange={(e) => setTermLen(Number(e.target.value))}
+            value={fragLen}
+            onChange={(e) => setFragLen(Number(e.target.value))}
             className="w-full border rounded p-2"
             min="1"
             max="3"
@@ -173,10 +173,10 @@ export default function ApronymForm() {
             onChange={(e) => setMaxLen(Number(e.target.value))}
             className="w-full border rounded p-2"
             min="1"
-            max={Math.min(10, termLen * terms.split(",").filter(t => t.trim().length > 0).length)}
+            max={Math.min(10, fragLen * terms.split(",").filter(t => t.trim().length > 0).length)}
           />
           <small className="text-gray-500">
-            Maximum possible: {termLen * terms.split(",").filter(t => t.trim().length > 0).length}
+            Maximum possible: {fragLen * terms.split(",").filter(t => t.trim().length > 0).length}
           </small>
         </div>
         <button
@@ -229,7 +229,7 @@ export default function ApronymForm() {
         <ul className="list-disc pl-5 space-y-1">
           {results.map((apronym, idx) => (
             <li key={idx}>
-              <span className="font-semibold">{apronym.name}</span>: {apronym.terms.join(", ")}
+              <span className="font-semibold">{apronym.text}</span>: {apronym.terms.join(", ")}
             </li>
           ))}
         </ul>

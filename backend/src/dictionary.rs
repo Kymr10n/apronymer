@@ -19,9 +19,13 @@ static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
 });
 
 /// Check if word exists in dictionary
+/// Returns false if dictionary access fails (defensive programming)
 pub fn is_valid_word(word: &str) -> bool {
-    DICTIONARY
-        .read()
-        .unwrap()
-        .contains(&word.to_uppercase())
+    match DICTIONARY.read() {
+        Ok(dict) => dict.contains(&word.to_uppercase()),
+        Err(e) => {
+            tracing::error!("Dictionary lock poisoned: {}", e);
+            false // Fail safely - don't crash the server
+        }
+    }
 }
