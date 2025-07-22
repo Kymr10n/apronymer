@@ -2,8 +2,13 @@ use itertools::Itertools;
 use crate::{dictionary::is_valid_word, routes::Apronym};
 use tracing;
 
+pub struct Fragment {
+    text: String, // The text content of the fragment
+    index: usize, // Index of the term in the original text
+}
+
 /// Generate possible apronyms based on input terms
-pub fn generate_apronyms(terms: Vec<String>, min_len: usize, max_len: usize) -> Vec<Apronym> {
+pub fn generate_apronyms(terms: Vec<String>, term_len: usize, min_len: usize, max_len: usize) -> Vec<Apronym> {
     tracing::info!("Generating apronyms: terms={:?}, min_len={}, max_len={}", terms, min_len, max_len);
     let variants = permutate(terms.len(), min_len, max_len);
     match_terms(variants, &terms)
@@ -62,7 +67,7 @@ mod tests {
     #[test]
     fn test_generate_apronyms_valid_input() {
         let terms = vec!["Alpha".to_string(), "Echo".to_string(), "India".to_string()];
-        let results = generate_apronyms(terms, 2, 3);
+        let results = generate_apronyms(terms, 1, 2, 3);
         // Can't assert exact contents due to dictionary check, but should not panic
         assert!(!results.is_empty());
     }
@@ -70,7 +75,7 @@ mod tests {
     #[test]
     fn test_generate_apronyms_empty_terms() {
         let terms: Vec<String> = vec![];
-        let results = generate_apronyms(terms, 1, 3);
+        let results = generate_apronyms(terms, 2, 1, 3);
         assert!(results.is_empty());
     }
 

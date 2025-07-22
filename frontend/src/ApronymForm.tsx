@@ -8,6 +8,7 @@ interface Apronym {
 
 export default function ApronymForm() {
   const [terms, setTerms] = useState("");
+  const [termLen, setTermLen] = useState(1);
   const [minLen, setMinLen] = useState(2);
   const [maxLen, setMaxLen] = useState(4);
   const [results, setResults] = useState<Apronym[]>([]);
@@ -15,6 +16,7 @@ export default function ApronymForm() {
 
   const [lastRequest, setLastRequest] = useState<{
     terms: string[];
+    termLen: number;
     minLen: number;
     maxLen: number;
   } | null>(null);
@@ -49,6 +51,11 @@ export default function ApronymForm() {
       return;
     }
 
+    if (termLen < 1 || termLen > 3) {
+      alert("Term Length must be between 1 and 3.");
+      return;
+    }
+
     if (minLen > 10 || maxLen > 10) {
       alert("Min Length and Max Length must not exceed 10.");
       return;
@@ -70,6 +77,12 @@ export default function ApronymForm() {
       return;
     }
 
+    const maxPossibleLength = termLen * validTerms.length;
+    if (maxLen > maxPossibleLength) {
+      alert(`Max Length cannot exceed ${maxPossibleLength} (Term Length × Number of Terms).`);
+      return;
+    }
+
     const hasVowelStart = validTerms.some((t) => /^[aeiouAEIOU]/.test(t));
     if (!hasVowelStart) {
       alert("At least one term must start with a vowel (A, E, I, O, U).");
@@ -78,6 +91,7 @@ export default function ApronymForm() {
 
     const requestPayload = {
       terms: validTerms,
+      termLen,
       minLen,
       maxLen,
     };
@@ -100,6 +114,7 @@ export default function ApronymForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           terms: validTerms,
+          term_len: termLen,
           min_len: minLen,
           max_len: maxLen,
         }),
@@ -131,6 +146,17 @@ export default function ApronymForm() {
           />
         </div>
         <div>
+          <label className="block font-semibold">Term Length (1=first letter, 2=first two letters, 3=first three letters):</label>
+          <input
+            type="number"
+            value={termLen}
+            onChange={(e) => setTermLen(Number(e.target.value))}
+            className="w-full border rounded p-2"
+            min="1"
+            max="3"
+          />
+        </div>
+        <div>
           <label className="block font-semibold">Min Length:</label>
           <input
             type="number"
@@ -146,7 +172,12 @@ export default function ApronymForm() {
             value={maxLen}
             onChange={(e) => setMaxLen(Number(e.target.value))}
             className="w-full border rounded p-2"
+            min="1"
+            max={Math.min(10, termLen * terms.split(",").filter(t => t.trim().length > 0).length)}
           />
+          <small className="text-gray-500">
+            Maximum possible: {termLen * terms.split(",").filter(t => t.trim().length > 0).length}
+          </small>
         </div>
         <button
           type="submit"
