@@ -52,6 +52,11 @@ export function useApronymValidation() {
     if (!hasVowelStart) {
       return { validTerms: [], error: "At least one term must start with a vowel (A, E, I, O, U)." };
     }
+    // Fragment length validation: must be <= length of smallest term
+    const minTermLength = uniqueTerms.reduce((min, term) => Math.min(min, term.length), Infinity);
+    if (fragLen > minTermLength) {
+      return { validTerms: [], error: `Fragment Length (${fragLen}) must not be greater than the length of the smallest term (${minTermLength}).` };
+    }
     return { validTerms, error: null };
   }, []);
 }

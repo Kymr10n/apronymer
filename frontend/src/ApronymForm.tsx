@@ -29,6 +29,7 @@ export default function ApronymForm() {
       alert(error);
       return;
     }
+    // Fragment length validation is now handled in the validation hook
     const requestPayload = {
       terms: validTerms,
       fragLen,
