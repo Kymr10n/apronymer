@@ -111,7 +111,10 @@ export default function ApronymForm() {
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": "6f8e2b7c-4c3a-4e2a-9b1a-2d7f8c9e1a5b"
+        },
         body: JSON.stringify({
           terms: validTerms,
           frag_len: fragLen,
