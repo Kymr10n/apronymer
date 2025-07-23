@@ -11,14 +11,16 @@ function App() {
   }, []);
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">
+    <div className="max-w-md mx-auto px-2 sm:px-4 py-4">
+      <h1 className="text-2xl font-bold text-left mb-2">
         Apronymer
         {gitVersion && (
           <span className="ml-2 text-xs text-gray-500 align-middle">({gitVersion})</span>
         )}
       </h1>
-      <ApronymForm />
+      <div>
+        <ApronymForm />
+      </div>
     </div>
   );
 }

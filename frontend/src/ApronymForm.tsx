@@ -140,51 +140,58 @@ export default function ApronymForm() {
     <div className="max-w-md mx-auto">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block font-semibold">Terms (comma separated):</label>
+          <label className="block font-semibold text-base sm:text-lg">Terms (comma separated):</label>
           <input
             type="text"
             value={terms}
             onChange={(e) => setTerms(e.target.value)}
-            className="w-full border rounded p-2"
+            className="w-full border rounded p-3 text-base sm:text-lg"
+            inputMode="text"
+            autoComplete="off"
           />
         </div>
         <div>
-          <label className="block font-semibold">Fragment Length:</label>
+          <label className="block font-semibold text-base sm:text-lg">Fragment Length:</label>
           <input
             type="number"
             value={fragLen}
             onChange={(e) => setFragLen(Number(e.target.value))}
-            className="w-full border rounded p-2"
+            className="w-full border rounded p-3 text-base sm:text-lg"
             min="1"
             max="3"
+            inputMode="numeric"
           />
         </div>
         <div>
-          <label className="block font-semibold">Min Length:</label>
+          <label className="block font-semibold text-base sm:text-lg">Min Length:</label>
           <input
             type="number"
             value={minLen}
             onChange={(e) => setMinLen(Number(e.target.value))}
-            className="w-full border rounded p-2"
+            className="w-full border rounded p-3 text-base sm:text-lg"
+            min="1"
+            inputMode="numeric"
           />
         </div>
         <div>
-          <label className="block font-semibold">Max Length:</label>
+          <label className="block font-semibold text-base sm:text-lg">Max Length:</label>
           <input
             type="number"
             value={maxLen}
             onChange={(e) => setMaxLen(Number(e.target.value))}
-            className="w-full border rounded p-2"
+            className="w-full border rounded p-3 text-base sm:text-lg"
             min="1"
             max={Math.min(10, fragLen * terms.split(",").filter(t => t.trim().length > 0).length)}
+            inputMode="numeric"
           />
-          <small className="text-gray-500">
+          <small className="text-gray-500 block mt-1">
             Maximum possible: {fragLen * terms.split(",").filter(t => t.trim().length > 0).length}
           </small>
         </div>
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+          className="w-full bg-blue-500 text-white py-3 rounded text-base sm:text-lg hover:bg-blue-600"
+          style={{ minHeight: 44 }}
         >
           {loading ? "Generating..." : "Generate"}
         </button>
