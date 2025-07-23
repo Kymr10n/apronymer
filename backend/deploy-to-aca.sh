@@ -120,6 +120,43 @@ resource_exists() {
   esac
 }
 
+# Function to force a new revision by updating with a timestamp environment variable
+force_new_revision() {
+  local app_name=$1
+  local resource_group=$2
+  local timestamp=$(date +%s)
+  
+  echo -e "${YELLOW}🔄 Forcing new revision for $app_name with timestamp $timestamp...${NC}"
+  az containerapp update \
+    --name $app_name \
+    --resource-group $resource_group \
+    --set-env-vars DEPLOY_TIMESTAMP="$timestamp" \
+    --output none
+}
+
+# Function to verify new revision was created
+verify_new_revision() {
+  local app_name=$1
+  local resource_group=$2
+  
+  echo -e "${YELLOW}🔍 Verifying new revision for $app_name...${NC}"
+  
+  # Get the latest revision info with a simpler query
+  local latest_revision=$(az containerapp revision list \
+    --name $app_name \
+    --resource-group $resource_group \
+    --query "[?properties.active].name | [0]" \
+    --output tsv)
+  
+  local revision_time=$(az containerapp revision list \
+    --name $app_name \
+    --resource-group $resource_group \
+    --query "[?properties.active].properties.createdTime | [0]" \
+    --output tsv)
+  
+  echo -e "${GREEN}✅ Active revision: $latest_revision (created: $revision_time)${NC}"
+}
+
 # Function to clean up existing container apps
 cleanup_container_apps() {
   local cleanup_frontend=$1
@@ -269,6 +306,9 @@ if [[ "$DEPLOY_BACKEND" == "true" ]]; then
       --image $ACR_LOGIN_SERVER/apronymer-backend:latest \
       --cpu 0.5 \
       --memory 1Gi
+    
+    # Force a new revision to ensure the latest image is used
+    force_new_revision $BACKEND_APP_NAME $RESOURCE_GROUP
   else
     echo -e "${YELLOW}🚀 Deploying backend container app with enhanced resources...${NC}"
     az containerapp create \
@@ -283,7 +323,7 @@ if [[ "$DEPLOY_BACKEND" == "true" ]]; then
       --max-replicas 3 \
       --target-port 3000 \
       --ingress external \
-      --env-vars HOST=0.0.0.0 PORT=3000 RUST_LOG=debug API_KEY="${API_KEY:-missing}"
+      --env-vars HOST=0.0.0.0 PORT=3000 RUST_LOG=debug API_KEY="${API_KEY:-missing}" DEPLOY_TIMESTAMP="$(date +%s)"
   fi
 fi
 
@@ -300,6 +340,9 @@ if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
       --name $FRONTEND_APP_NAME \
       --resource-group $RESOURCE_GROUP \
       --image $ACR_LOGIN_SERVER/apronymer-frontend:latest
+    
+    # Force a new revision to ensure the latest image is used
+    force_new_revision $FRONTEND_APP_NAME $RESOURCE_GROUP
   else
     echo -e "${YELLOW}🚀 Deploying frontend container app...${NC}"
     az containerapp create \
@@ -313,7 +356,8 @@ if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
       --min-replicas 1 \
       --max-replicas 3 \
       --target-port 8080 \
-      --ingress external
+      --ingress external \
+      --env-vars DEPLOY_TIMESTAMP="$(date +%s)"
   fi
 fi
 
@@ -323,6 +367,15 @@ if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
 fi
 
 echo -e "${GREEN}✅ Deployment completed successfully!${NC}"
+
+# Verify new revisions were created
+echo -e "${YELLOW}🔍 Verifying deployments...${NC}"
+if [[ "$DEPLOY_BACKEND" == "true" ]]; then
+  verify_new_revision $BACKEND_APP_NAME $RESOURCE_GROUP
+fi
+if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
+  verify_new_revision $FRONTEND_APP_NAME $RESOURCE_GROUP
+fi
 
 # Display URLs only for deployed components
 if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
