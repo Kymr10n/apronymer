@@ -1,6 +1,6 @@
 # Multi-stage build for Rust backend
 # Stage 1: Build the application
-FROM rust:1.75-slim as builder
+FROM rust:1.82-slim as builder
 
 # Install system dependencies for compilation
 RUN apt-get update && apt-get install -y \
@@ -45,6 +45,9 @@ WORKDIR /app
 # Copy the binary from builder stage
 COPY --from=builder /app/target/release/apronymer /app/apronymer
 
+# Ensure apronymer is executable
+RUN chmod +x /app/apronymer
+
 # Copy wordlist directory
 COPY --from=builder /app/wordlist /app/wordlist
 
@@ -60,13 +63,14 @@ USER appuser
 # Expose port
 EXPOSE 3000
 
-# Set environment variables
+# Set environment variables with better defaults for containerized deployment
 ENV HOST=0.0.0.0
 ENV PORT=3000
 ENV RUST_LOG=info
+ENV RUST_BACKTRACE=1
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Add a health check command for better container monitoring
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
 # Run the application

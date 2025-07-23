@@ -7,7 +7,7 @@ services:
       - HOST=0.0.0.0
       - PORT=3000
       - RUST_LOG=info
-      - API_KEY=test-api-key
+      - API_KEY=f806867ecacc6edc2b240fa45e43b0ee6f5541d85c84bdb1efd7e4efed129f09
     volumes:
       # Mount wordlist for development
       - ./wordlist:/app/wordlist:ro

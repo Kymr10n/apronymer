@@ -1,0 +1,24 @@
+// Environment configuration for different deployment scenarios
+// Version: 2025-07-23-v3 (Cache Buster)
+const getApiBaseUrl = (): string => {
+  // In production (Azure Container Apps), use the backend URL
+  if (import.meta.env.PROD) {
+    return import.meta.env.VITE_API_BASE_URL || 'https://apronymer-backend.agreeablemushroom-284a0b84.westeurope.azurecontainerapps.io';
+  }
+  
+  // In development, use local backend
+  return 'http://localhost:3000';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
+export const API_KEY = import.meta.env.PROD ? 'f806867ecacc6edc2b240fa45e43b0ee6f5541d85c84bdb1efd7e4efed129f09' : 'test-api-key';
+
+console.log('🔧 CONFIG LOADED - Version: 2025-07-23-v3');
+console.log('🌐 API_BASE_URL:', API_BASE_URL);
+console.log('🏭 PROD mode:', import.meta.env.PROD);
+
+// Aggressive debug - this will show up immediately when page loads
+setTimeout(() => {
+  console.log('🚨 CACHE CHECK: If you see this, the new version is loaded!');
+  console.log('🔗 Will call:', `${API_BASE_URL}/api/generate`);
+}, 100);

@@ -121,6 +121,7 @@ resource_exists() {
 }
 
 # Function to clean up existing container apps
+# Function to clean up existing container apps
 cleanup_container_apps() {
   local cleanup_frontend=$1
   local cleanup_backend=$2
@@ -266,24 +267,22 @@ if [[ "$DEPLOY_BACKEND" == "true" ]]; then
     az containerapp update \
       --name $BACKEND_APP_NAME \
       --resource-group $RESOURCE_GROUP \
-      --image $ACR_LOGIN_SERVER/apronymer-backend:latest \
-      --cpu 0.5 \
-      --memory 1Gi
+      --image $ACR_LOGIN_SERVER/apronymer-backend:latest
   else
-    echo -e "${YELLOW}🚀 Deploying backend container app with enhanced resources...${NC}"
+    echo -e "${YELLOW}🚀 Deploying backend container app...${NC}"
     az containerapp create \
       --name $BACKEND_APP_NAME \
       --resource-group $RESOURCE_GROUP \
       --environment $ENVIRONMENT_NAME \
       --image $ACR_LOGIN_SERVER/apronymer-backend:latest \
       --registry-server $ACR_LOGIN_SERVER \
-      --cpu 0.5 \
-      --memory 1Gi \
+      --cpu 0.25 \
+      --memory 0.5Gi \
       --min-replicas 1 \
       --max-replicas 3 \
       --target-port 3000 \
       --ingress external \
-      --env-vars HOST=0.0.0.0 PORT=3000 RUST_LOG=debug API_KEY="${API_KEY:-missing}"
+      --env-vars HOST=0.0.0.0 PORT=3000 RUST_LOG=info API_KEY=$API_KEY
   fi
 fi
 
@@ -321,6 +320,39 @@ fi
 if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
   FRONTEND_URL=$(az containerapp show --name $FRONTEND_APP_NAME --resource-group $RESOURCE_GROUP --query properties.configuration.ingress.fqdn --output tsv)
 fi
+
+# Get backend URL
+BACKEND_URL=$(az containerapp show --name $BACKEND_APP_NAME --resource-group $RESOURCE_GROUP --query properties.configuration.ingress.fqdn --output tsv)
+
+# Deploy or update Frontend Container App
+if resource_exists "containerapp" $FRONTEND_APP_NAME $RESOURCE_GROUP; then
+  echo -e "${YELLOW}� Updating frontend container app...${NC}"
+  az containerapp update \
+    --name $FRONTEND_APP_NAME \
+    --resource-group $RESOURCE_GROUP \
+    --image $ACR_LOGIN_SERVER/apronymer-frontend:latest
+else
+  echo -e "${YELLOW}�🚀 Deploying frontend container app...${NC}"
+  az containerapp create \
+    --name $FRONTEND_APP_NAME \
+    --resource-group $RESOURCE_GROUP \
+    --environment $ENVIRONMENT_NAME \
+    --image $ACR_LOGIN_SERVER/apronymer-frontend:latest \
+    --registry-server $ACR_LOGIN_SERVER \
+    --cpu 0.25 \
+    --memory 0.5Gi \
+    --min-replicas 0 \
+    --max-replicas 3 \
+    --target-port 80 \
+    --ingress external
+fi
+
+# Get frontend URL
+if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
+  FRONTEND_URL=$(az containerapp show --name $FRONTEND_APP_NAME --resource-group $RESOURCE_GROUP --query properties.configuration.ingress.fqdn --output tsv)
+fi
+
+echo -e "${GREEN}✅ Deployment completed successfully!${NC}"
 
 echo -e "${GREEN}✅ Deployment completed successfully!${NC}"
 

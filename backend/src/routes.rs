@@ -1,10 +1,10 @@
 // Route handlers and API types for the backend
 use axum::{Json, Router, response::IntoResponse, routing::post};
 use serde::{Deserialize, Serialize};
-use tracing;
 
 use crate::generator::generate_apronyms; // Apronym generation logic
 use crate::validator::validate_generate_request; // Request validation
+use crate::dictionary; // Dictionary access
 
 /// Request payload for generating apronyms
 #[derive(Debug, Serialize, Deserialize)]
@@ -34,9 +34,29 @@ pub async fn generate(Json(payload): Json<GenerateRequest>) -> impl IntoResponse
     Json(results).into_response()
 }
 
+/// Health status response
+#[derive(Debug, Serialize, Deserialize)]
+pub struct HealthResponse {
+    pub status: String,
+    pub dictionary_words: usize,
+    pub dictionary_available: bool,
+    pub timestamp: String,
+}
+
 /// Health check endpoint (no API key required)
 pub async fn health() -> impl IntoResponse {
-    "healthy"
+    let (word_count, has_words) = dictionary::get_dictionary_stats();
+    let health_response = HealthResponse {
+        status: if has_words { "healthy".to_string() } else { "degraded".to_string() },
+        dictionary_words: word_count,
+        dictionary_available: has_words,
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    };
+    
+    tracing::info!("Health check: status={}, dictionary_words={}, dictionary_available={}", 
+        health_response.status, health_response.dictionary_words, health_response.dictionary_available);
+    
+    Json(health_response)
 }
 
 /// Define the API routes for the application

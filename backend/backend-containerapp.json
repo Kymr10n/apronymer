@@ -1,0 +1,108 @@
+{
+  "properties": {
+    "managedEnvironmentId": "/subscriptions/9c221796-9479-49ec-b971-c3b5a903999a/resourceGroups/rg-apronymer/providers/Microsoft.App/managedEnvironments/apronymer-env",
+    "configuration": {
+      "ingress": {
+        "external": true,
+        "targetPort": 3000,
+        "transport": "auto",
+        "traffic": [
+          {
+            "weight": 100,
+            "latestRevision": true
+          }
+        ]
+      },
+      "registries": [
+        {
+          "server": "crapronymer.azurecr.io"
+        }
+      ]
+    },
+    "template": {
+      "containers": [
+        {
+          "image": "crapronymer.azurecr.io/apronymer-backend:latest",
+          "name": "apronymer-backend",
+          "env": [
+            {
+              "name": "HOST",
+              "value": "0.0.0.0"
+            },
+            {
+              "name": "PORT",
+              "value": "3000"
+            },
+            {
+              "name": "RUST_LOG",
+              "value": "debug"
+            },
+            {
+              "name": "API_KEY",
+              "value": "f806867ecacc6edc2b240fa45e43b0ee6f5541d85c84bdb1efd7e4efed129f09"
+            }
+          ],
+          "resources": {
+            "cpu": 0.5,
+            "memory": "1Gi"
+          },
+          "probes": [
+            {
+              "type": "Startup",
+              "httpGet": {
+                "path": "/health",
+                "port": 3000,
+                "scheme": "HTTP"
+              },
+              "initialDelaySeconds": 10,
+              "periodSeconds": 10,
+              "timeoutSeconds": 5,
+              "failureThreshold": 30,
+              "successThreshold": 1
+            },
+            {
+              "type": "Liveness",
+              "httpGet": {
+                "path": "/health",
+                "port": 3000,
+                "scheme": "HTTP"
+              },
+              "initialDelaySeconds": 30,
+              "periodSeconds": 30,
+              "timeoutSeconds": 5,
+              "failureThreshold": 3,
+              "successThreshold": 1
+            },
+            {
+              "type": "Readiness",
+              "httpGet": {
+                "path": "/health",
+                "port": 3000,
+                "scheme": "HTTP"
+              },
+              "initialDelaySeconds": 5,
+              "periodSeconds": 10,
+              "timeoutSeconds": 3,
+              "failureThreshold": 3,
+              "successThreshold": 1
+            }
+          ]
+        }
+      ],
+      "scale": {
+        "minReplicas": 1,
+        "maxReplicas": 3,
+        "rules": [
+          {
+            "name": "http-rule",
+            "http": {
+              "metadata": {
+                "concurrentRequests": "10"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

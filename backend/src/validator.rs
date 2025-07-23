@@ -2,10 +2,10 @@
 use axum::{http::StatusCode, response::{IntoResponse, Response}};
 use crate::routes::GenerateRequest;
 use std::collections::HashSet;
-use tracing;
 
 /// Validate the GenerateRequest payload
 /// Returns Ok(()) if valid, or an error response if invalid
+#[allow(clippy::result_large_err)]
 pub fn validate_generate_request(payload: &GenerateRequest) -> Result<(), Response> {
     tracing::info!("Validating generate request: terms={:?}, frag_len={}, min_len={}, max_len={}", payload.terms, payload.frag_len, payload.min_len, payload.max_len);
 
@@ -36,7 +36,7 @@ pub fn validate_generate_request(payload: &GenerateRequest) -> Result<(), Respon
     // Calculate maximum possible apronym length (frag_len * number_of_terms)
     let max_possible_length = payload.frag_len * payload.terms.len();
     if payload.max_len > max_possible_length {
-        return Err((StatusCode::BAD_REQUEST, format!("Max Length cannot exceed {} (Fragment Length × Number of Terms)", max_possible_length)).into_response());
+        return Err((StatusCode::BAD_REQUEST, format!("Max Length cannot exceed {max_possible_length} (Fragment Length × Number of Terms)")).into_response());
     }
     
     // Safety check: prevent excessive computational complexity

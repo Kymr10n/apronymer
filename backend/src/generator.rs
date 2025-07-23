@@ -1,6 +1,5 @@
 use itertools::Itertools;
 use crate::{dictionary::is_valid_word, routes::Apronym};
-use tracing;
 
 /// Generate possible apronyms based on input terms
 /// 
@@ -83,7 +82,7 @@ pub fn generate_apronyms(terms: Vec<String>, frag_len: usize, min_len: usize, ma
     tracing::info!("Generated {} valid apronyms", matches.len());
     tracing::debug!("Valid apronyms: {:?}", matches.iter().map(|a| &a.text).collect::<Vec<_>>());
     
-    return matches;
+    matches
 }
 
 /// Generate permutations of indices based on term count

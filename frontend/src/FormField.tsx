@@ -7,7 +7,7 @@ interface FormFieldProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   min?: number;
   max?: number;
-  inputMode?: string;
+  inputMode?: "search" | "text" | "email" | "tel" | "url" | "numeric" | "none" | "decimal";
   autoComplete?: string;
 }
 
@@ -25,7 +25,7 @@ export function FormField({ label, type, value, onChange, min, max, inputMode, a
         className="w-full border rounded p-3 text-base sm:text-lg"
         min={min}
         max={max}
-        inputMode={inputMode as any}
+        inputMode={inputMode}
         autoComplete={autoComplete}
         aria-label={label}
       />

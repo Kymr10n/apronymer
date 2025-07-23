@@ -266,24 +266,22 @@ if [[ "$DEPLOY_BACKEND" == "true" ]]; then
     az containerapp update \
       --name $BACKEND_APP_NAME \
       --resource-group $RESOURCE_GROUP \
-      --image $ACR_LOGIN_SERVER/apronymer-backend:latest \
-      --cpu 0.5 \
-      --memory 1Gi
+      --image $ACR_LOGIN_SERVER/apronymer-backend:latest
   else
-    echo -e "${YELLOW}🚀 Deploying backend container app with enhanced resources...${NC}"
+    echo -e "${YELLOW}🚀 Deploying backend container app...${NC}"
     az containerapp create \
       --name $BACKEND_APP_NAME \
       --resource-group $RESOURCE_GROUP \
       --environment $ENVIRONMENT_NAME \
       --image $ACR_LOGIN_SERVER/apronymer-backend:latest \
       --registry-server $ACR_LOGIN_SERVER \
-      --cpu 0.5 \
-      --memory 1Gi \
+      --cpu 0.25 \
+      --memory 0.5Gi \
       --min-replicas 1 \
       --max-replicas 3 \
       --target-port 3000 \
       --ingress external \
-      --env-vars HOST=0.0.0.0 PORT=3000 RUST_LOG=debug API_KEY="${API_KEY:-missing}"
+      --env-vars HOST=0.0.0.0 PORT=3000 RUST_LOG=debug API_KEY=$API_KEY
   fi
 fi
 

@@ -3,9 +3,11 @@ import { FormField } from "./FormField";
 import { ResultsList } from "./ResultsList";
 import type { Apronym } from "./ResultsList";
 import { useApronymValidation } from "./useApronymValidation";
+import { API_BASE_URL, API_KEY } from "./config";
 
 /**
  * ApronymForm: Main form for generating apronynms.
+ * VERSION: 2025-07-23-v3 (CACHE BUSTER)
  */
 export default function ApronymForm() {
   const [terms, setTerms] = useState("");
@@ -21,6 +23,14 @@ export default function ApronymForm() {
     maxLen: number;
   } | null>(null);
   const validate = useApronymValidation();
+
+  // DEBUG: Log on component mount
+  useState(() => {
+    console.log('🎯 ApronymForm MOUNTED - Version: 2025-07-23-v3');
+    console.log('🔧 API_BASE_URL:', API_BASE_URL);
+    console.log('🔑 API_KEY:', API_KEY);
+    return null;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,11 +56,19 @@ export default function ApronymForm() {
     setLoading(true);
     setResults([]);
     try {
-      const response = await fetch("/api/generate", {
+      const fullUrl = `${API_BASE_URL}/api/generate`;
+      console.log('🚀 APRONYM DEBUG - Making API request');
+      console.log('🌐 Full URL:', fullUrl);
+      console.log('🔧 API_BASE_URL:', API_BASE_URL);
+      console.log('🔑 API_KEY:', API_KEY);
+      console.log('📦 Request payload:', { terms: validTerms, frag_len: fragLen, min_len: minLen, max_len: maxLen });
+      console.log('⏰ Timestamp:', new Date().toISOString());
+      
+      const response = await fetch(fullUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": "test-api-key"
+          "x-api-key": API_KEY
         },
         body: JSON.stringify({
           terms: validTerms,
@@ -64,8 +82,8 @@ export default function ApronymForm() {
       setResults(data);
       setLastRequest(requestPayload);
     } catch (err) {
-      console.error(err);
-      alert("An error occurred. Check console for details.");
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
+      alert(`Failed to generate apronyms: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -110,6 +128,9 @@ export default function ApronymForm() {
         />
         <small className="text-gray-500 block mt-1">
           Maximum possible: {fragLen * terms.split(",").filter(t => t.trim().length > 0).length}
+        </small>
+        <small className="text-xs text-red-500 block mt-1">
+          🔧 DEBUG: v2025-07-23-v3 | API: {API_BASE_URL}/api/generate
         </small>
         <button
           type="submit"
