@@ -34,6 +34,11 @@ pub async fn generate(Json(payload): Json<GenerateRequest>) -> impl IntoResponse
     Json(results).into_response()
 }
 
+/// Health check endpoint (no API key required)
+pub async fn health() -> impl IntoResponse {
+    "healthy"
+}
+
 /// Define the API routes for the application
 pub fn routes() -> Router {
     Router::new()

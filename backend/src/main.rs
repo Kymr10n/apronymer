@@ -44,10 +44,10 @@ async fn main() {
     let addr = format!("{}:{}", host, port).parse::<SocketAddr>().expect("Invalid HOST or PORT");
     let listener = TcpListener::bind(addr).await.unwrap();
 
-    // Build the Axum app with API routes only (headless)
+    // Build the Axum app with health endpoint accessible and API routes protected
     let app = Router::new()
-        .nest("/api", routes::routes()) // Mount API routes at /api
-        .layer(axum::middleware::from_fn(require_api_key)) // Require API key for all requests
+        .route("/health", axum::routing::get(routes::health)) // Health endpoint without API key
+        .nest("/api", routes::routes().layer(axum::middleware::from_fn(require_api_key))) // API routes with API key
         .layer(TraceLayer::new_for_http()) // Add request logging
         .layer(
             CorsLayer::new()

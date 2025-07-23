@@ -1,0 +1,40 @@
+services:
+  backend:
+    image: apronymer-backend:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3000
+      - RUST_LOG=info
+      - API_KEY=test-api-key
+    volumes:
+      # Mount wordlist for development
+      - ./wordlist:/app/wordlist:ro
+    networks:
+      - apronymer-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    image: apronymer-frontend:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - apronymer-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  apronymer-network:
+    driver: bridge

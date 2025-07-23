@@ -1,0 +1,37 @@
+# Build artifacts
+target/
+
+# Development files
+.git/
+.gitignore
+.vscode/
+.github/
+
+# Docker files
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Documentation
+README.md
+*.md
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Azure deployment files
+aca-deployment.yaml
+deploy-to-azure.sh
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
