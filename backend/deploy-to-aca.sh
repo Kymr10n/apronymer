@@ -62,8 +62,19 @@ ENVIRONMENT_NAME="apronymer-env"
 BACKEND_APP_NAME="apronymer-backend"
 FRONTEND_APP_NAME="apronymer-frontend"
 CONTAINER_REGISTRY_NAME="crapronymer"
-# Generate or use existing API key
-API_KEY="${API_KEY:-f806867ecacc6edc2b240fa45e43b0ee6f5541d85c84bdb1efd7e4efed129f09}"
+
+# Load .env if present
+if [ -f .env ]; then
+  set -o allexport
+  source .env
+  set +o allexport
+fi
+
+# Require API_KEY to be set
+if [ -z "$API_KEY" ]; then
+  echo -e "${RED}❌ API_KEY is not set. Please set it in your environment or in a .env file before running this script.${NC}"
+  exit 1
+fi
 
 # Colors for output
 RED='\033[0;31m'

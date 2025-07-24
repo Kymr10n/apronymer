@@ -13,6 +13,7 @@ dist-ssr
 *.local
 
 # Environment variables
+## Ignore all .env files except .env.example
 .env
 .env.*
 !.env.example
