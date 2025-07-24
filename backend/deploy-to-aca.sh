@@ -170,10 +170,10 @@ if [[ "$DEPLOY_BACKEND" == "true" ]]; then
   # Build locally to avoid Azure ACR build issues
   echo -e "${YELLOW}📦 Building Docker image locally...${NC}"
   if [[ -n "$GITHUB_ACTIONS" ]]; then
-    # In GitHub Actions, force clean build to avoid cache issues
-    docker build --no-cache -t apronymer-backend:$IMAGE_TAG . || exit 1
+    # In GitHub Actions, use buildx with explicit load flag
+    docker buildx build --load --no-cache -t apronymer-backend:$IMAGE_TAG . || exit 1
   else
-    # Local development can use cache
+    # Local development can use regular docker build with cache
     docker build -t apronymer-backend:$IMAGE_TAG . || exit 1
   fi
   
@@ -197,10 +197,10 @@ if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
   # Build locally
   echo -e "${YELLOW}📦 Building Docker image locally...${NC}"
   if [[ -n "$GITHUB_ACTIONS" ]]; then
-    # In GitHub Actions, force clean build to avoid cache issues
-    docker build --no-cache -t apronymer-frontend:$IMAGE_TAG . || exit 1
+    # In GitHub Actions, use buildx with explicit load flag
+    docker buildx build --load --no-cache -t apronymer-frontend:$IMAGE_TAG . || exit 1
   else
-    # Local development can use cache
+    # Local development can use regular docker build with cache
     docker build -t apronymer-frontend:$IMAGE_TAG . || exit 1
   fi
   
