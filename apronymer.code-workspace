@@ -1,6 +1,10 @@
 {
   "folders": [
-    {
+{
+            "name": "Repository Root",
+            "path": "/home/alex/Projects/apronymer"
+        },    
+{
       "name": "Backend",
       "path": "backend"
     },

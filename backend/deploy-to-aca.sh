@@ -76,13 +76,41 @@ if [ -z "$API_KEY" ]; then
   exit 1
 fi
 
-# Ensure Azure CLI login
-if ! az account show --query id -o tsv &>/dev/null; then
-  echo -e "${RED}❌ You are not logged in to Azure CLI. Please run 'az login' first.${NC}"
-  exit 1
+# Ensure Azure CLI login (handles both local and GitHub Actions)
+if [[ -n "$GITHUB_ACTIONS" ]]; then
+  echo -e "${YELLOW}🤖 Running in GitHub Actions environment${NC}"
+  # In GitHub Actions, authentication should be handled by azure/login@v1 action
+  if ! az account show --query id -o tsv &>/dev/null; then
+    echo -e "${RED}❌ Azure authentication failed in GitHub Actions. Ensure azure/login@v1 action is used.${NC}"
+    exit 1
+  fi
+else
+  echo -e "${YELLOW}💻 Running in local environment${NC}"
+  if ! az account show --query id -o tsv &>/dev/null; then
+    echo -e "${RED}❌ You are not logged in to Azure CLI. Please run 'az login' first.${NC}"
+    exit 1
+  fi
 fi
 
 echo -e "${GREEN}✅ Azure CLI authentication verified${NC}"
+
+# Login to Azure Container Registry
+echo -e "${YELLOW}🔐 Logging into Azure Container Registry...${NC}"
+if [[ -n "$GITHUB_ACTIONS" ]]; then
+  # In GitHub Actions, use service principal authentication
+  az acr login --name "$CONTAINER_REGISTRY_NAME" || {
+    echo -e "${RED}❌ Failed to login to Azure Container Registry in GitHub Actions${NC}"
+    echo -e "${YELLOW}💡 Ensure the Azure service principal has AcrPush permissions${NC}"
+    exit 1
+  }
+else
+  # Local development uses user authentication
+  az acr login --name "$CONTAINER_REGISTRY_NAME" || {
+    echo -e "${RED}❌ Failed to login to Azure Container Registry${NC}"
+    exit 1
+  }
+fi
+echo -e "${GREEN}✅ ACR authentication successful${NC}"
 
 # Determine components to deploy
 if [[ "$DEPLOY_BOTH" == "true" ]]; then
@@ -134,18 +162,46 @@ echo -e "${YELLOW}  - Revision Suffix: $REV_SUFFIX${NC}"
 echo -e "${YELLOW}  - Backend Dir: $BACKEND_DIR${NC}"
 echo -e "${YELLOW}  - Frontend Dir: $FRONTEND_DIR${NC}"
 
-# Build images
+# Build images locally and push to ACR (Azure ACR build has issues with our Rust binary)
 if [[ "$DEPLOY_BACKEND" == "true" ]]; then
-  echo -e "${YELLOW}🔨 Building backend image...${NC}"
+  echo -e "${YELLOW}🔨 Building backend image locally...${NC}"
   pushd "$BACKEND_DIR" > /dev/null
-  az acr build --registry "$CONTAINER_REGISTRY_NAME" --image apronymer-backend:$IMAGE_TAG . || exit 1
+  
+  # Build locally to avoid Azure ACR build issues
+  echo -e "${YELLOW}📦 Building Docker image locally...${NC}"
+  docker build -t apronymer-backend:$IMAGE_TAG . || exit 1
+  
+  # Tag for ACR
+  docker tag apronymer-backend:$IMAGE_TAG $ACR_LOGIN_SERVER/apronymer-backend:$IMAGE_TAG
+  
+  # Push to ACR
+  echo -e "${YELLOW}📤 Pushing to Azure Container Registry...${NC}"
+  docker push $ACR_LOGIN_SERVER/apronymer-backend:$IMAGE_TAG || exit 1
+  
+  # Clean up local image
+  docker rmi apronymer-backend:$IMAGE_TAG || true
+  
   popd > /dev/null
 fi
 
 if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
-  echo -e "${YELLOW}🎨 Building frontend image...${NC}"
+  echo -e "${YELLOW}🎨 Building frontend image locally...${NC}"
   pushd "$FRONTEND_DIR" > /dev/null
-  az acr build --registry "$CONTAINER_REGISTRY_NAME" --image apronymer-frontend:$IMAGE_TAG . || exit 1
+  
+  # Build locally
+  echo -e "${YELLOW}📦 Building Docker image locally...${NC}"
+  docker build -t apronymer-frontend:$IMAGE_TAG . || exit 1
+  
+  # Tag for ACR
+  docker tag apronymer-frontend:$IMAGE_TAG $ACR_LOGIN_SERVER/apronymer-frontend:$IMAGE_TAG
+  
+  # Push to ACR
+  echo -e "${YELLOW}📤 Pushing to Azure Container Registry...${NC}"
+  docker push $ACR_LOGIN_SERVER/apronymer-frontend:$IMAGE_TAG || exit 1
+  
+  # Clean up local image
+  docker rmi apronymer-frontend:$IMAGE_TAG || true
+  
   popd > /dev/null
 fi
 
