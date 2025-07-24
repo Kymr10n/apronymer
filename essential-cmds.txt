@@ -16,7 +16,7 @@ curl -s https://apronymer-backend.agreeablemushroom-284a0b84.westeurope.azurecon
 # Test backend API manually
 curl -X POST https://apronymer-backend.agreeablemushroom-284a0b84.westeurope.azurecontainerapps.io/api/generate \
   -H "Content-Type: application/json" \
-  -H "x-api-key: ruyrP0t8wJ8/hITKFLLkPSjcwxk/EDHX+iJQEzyO7l0=" \
+  -H "x-api-key: <API_KEY> \
   -d '{"terms": ["hello", "world"], "frag_len": 2, "min_len": 2, "max_len": 4}'
 
 # Check container status
