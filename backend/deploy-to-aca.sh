@@ -169,7 +169,13 @@ if [[ "$DEPLOY_BACKEND" == "true" ]]; then
   
   # Build locally to avoid Azure ACR build issues
   echo -e "${YELLOW}📦 Building Docker image locally...${NC}"
-  docker build -t apronymer-backend:$IMAGE_TAG . || exit 1
+  if [[ -n "$GITHUB_ACTIONS" ]]; then
+    # In GitHub Actions, force clean build to avoid cache issues
+    docker build --no-cache -t apronymer-backend:$IMAGE_TAG . || exit 1
+  else
+    # Local development can use cache
+    docker build -t apronymer-backend:$IMAGE_TAG . || exit 1
+  fi
   
   # Tag for ACR
   docker tag apronymer-backend:$IMAGE_TAG $ACR_LOGIN_SERVER/apronymer-backend:$IMAGE_TAG
@@ -190,7 +196,13 @@ if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
   
   # Build locally
   echo -e "${YELLOW}📦 Building Docker image locally...${NC}"
-  docker build -t apronymer-frontend:$IMAGE_TAG . || exit 1
+  if [[ -n "$GITHUB_ACTIONS" ]]; then
+    # In GitHub Actions, force clean build to avoid cache issues
+    docker build --no-cache -t apronymer-frontend:$IMAGE_TAG . || exit 1
+  else
+    # Local development can use cache
+    docker build -t apronymer-frontend:$IMAGE_TAG . || exit 1
+  fi
   
   # Tag for ACR
   docker tag apronymer-frontend:$IMAGE_TAG $ACR_LOGIN_SERVER/apronymer-frontend:$IMAGE_TAG
