@@ -87,7 +87,10 @@ export default function ApronymForm() {
           label="Fragment Length:"
           type="number"
           value={fragLen}
-          onChange={e => setFragLen(Number(e.target.value))}
+          onChange={e => {
+            const val = e.target.value === "" ? 1 : Number(e.target.value);
+            setFragLen(val);
+          }}
           min={1}
           max={3}
           inputMode="numeric"
@@ -96,7 +99,10 @@ export default function ApronymForm() {
           label="Min Length:"
           type="number"
           value={minLen}
-          onChange={e => setMinLen(Number(e.target.value))}
+          onChange={e => {
+            const val = e.target.value === "" ? 1 : Number(e.target.value);
+            setMinLen(val);
+          }}
           min={1}
           inputMode="numeric"
         />
@@ -104,7 +110,10 @@ export default function ApronymForm() {
           label="Max Length:"
           type="number"
           value={maxLen}
-          onChange={e => setMaxLen(Number(e.target.value))}
+          onChange={e => {
+            const val = e.target.value === "" ? 1 : Number(e.target.value);
+            setMaxLen(val);
+          }}
           min={1}
           max={Math.min(10, fragLen * terms.split(",").filter(t => t.trim().length > 0).length)}
           inputMode="numeric"
