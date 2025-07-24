@@ -58,6 +58,11 @@ readonly ACR_LOGIN_SERVER="${CONTAINER_REGISTRY_NAME}.azurecr.io"
 readonly IMAGE_TAG="latest"
 readonly REV_SUFFIX="$(date +%s)"
 
+# Application configuration
+readonly BACKEND_HOST="0.0.0.0"
+readonly BACKEND_PORT="3000"
+readonly FRONTEND_PORT="8080"
+
 # Load .env if present
 if [ -f .env ]; then
   set -o allexport
@@ -152,7 +157,8 @@ if [[ "$DEPLOY_BACKEND" == "true" ]]; then
       --resource-group "$RESOURCE_GROUP" \
       --image "$ACR_LOGIN_SERVER/apronymer-backend:$IMAGE_TAG" \
       --revision-suffix "$REV_SUFFIX" \
-      --cpu 0.5 --memory 1Gi
+      --cpu 0.5 --memory 1Gi \
+      --set-env-vars HOST="$BACKEND_HOST" PORT="$BACKEND_PORT" RUST_LOG=debug API_KEY="$API_KEY" DEPLOY_TIMESTAMP="$REV_SUFFIX"
   else
     az containerapp create \
       --name "$BACKEND_APP_NAME" \
@@ -162,8 +168,8 @@ if [[ "$DEPLOY_BACKEND" == "true" ]]; then
       --registry-server "$ACR_LOGIN_SERVER" \
       --cpu 0.5 --memory 1Gi \
       --min-replicas 1 --max-replicas 3 \
-      --target-port 3000 --ingress external \
-      --env-vars HOST=0.0.0.0 PORT=3000 RUST_LOG=debug API_KEY="$API_KEY" DEPLOY_TIMESTAMP="$REV_SUFFIX"
+      --target-port "$BACKEND_PORT" --ingress external \
+      --env-vars HOST="$BACKEND_HOST" PORT="$BACKEND_PORT" RUST_LOG=debug API_KEY="$API_KEY" DEPLOY_TIMESTAMP="$REV_SUFFIX"
   fi
 fi
 
@@ -175,7 +181,8 @@ if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
       --name "$FRONTEND_APP_NAME" \
       --resource-group "$RESOURCE_GROUP" \
       --image "$ACR_LOGIN_SERVER/apronymer-frontend:$IMAGE_TAG" \
-      --revision-suffix "$REV_SUFFIX"
+      --revision-suffix "$REV_SUFFIX" \
+      --set-env-vars VITE_API_KEY="$API_KEY" DEPLOY_TIMESTAMP="$REV_SUFFIX"
   else
     az containerapp create \
       --name "$FRONTEND_APP_NAME" \
@@ -185,8 +192,8 @@ if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
       --registry-server "$ACR_LOGIN_SERVER" \
       --cpu 0.25 --memory 0.5Gi \
       --min-replicas 1 --max-replicas 3 \
-      --target-port 8080 --ingress external \
-      --env-vars DEPLOY_TIMESTAMP="$REV_SUFFIX"
+      --target-port "$FRONTEND_PORT" --ingress external \
+      --env-vars VITE_API_KEY="$API_KEY" DEPLOY_TIMESTAMP="$REV_SUFFIX"
   fi
 fi
 
