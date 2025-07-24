@@ -20,7 +20,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production  # adjust if needed
+    environment: production (azure-container-apps)  # adjust if needed
 
     steps:
     - name: Checkout repository
