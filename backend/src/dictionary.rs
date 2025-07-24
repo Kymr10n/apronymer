@@ -6,7 +6,7 @@ use std::sync::RwLock;
 
 /// Global dictionary loaded once at startup
 static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
-    tracing::info!("🔄 Initializing dictionary...");
+    println!("🔄 Initializing dictionary...");
     let mut set = HashSet::new();
     
     // Use container path if it exists, otherwise use local development path
@@ -15,11 +15,11 @@ static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
     } else {
         "./wordlist/words.txt"
     };
-    tracing::info!("📖 Loading dictionary from: {}", dict_path);
+    println!("📖 Loading dictionary from: {}", dict_path);
     
     match File::open(dict_path) {
         Ok(file) => {
-            tracing::info!("✅ Dictionary file opened successfully");
+            println!("✅ Dictionary file opened successfully");
             let reader = BufReader::new(file);
             let mut word_count = 0;
             
@@ -33,38 +33,38 @@ static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
                         }
                     }
                     Err(e) => {
-                        tracing::warn!("⚠️ Failed to read line {}: {}", line_num + 1, e);
+                        println!("⚠️ Failed to read line {}: {}", line_num + 1, e);
                     }
                 }
             }
             
-            tracing::info!("✅ Dictionary loaded successfully with {} words", word_count);
+            println!("✅ Dictionary loaded successfully with {} words", word_count);
             if word_count == 0 {
-                tracing::error!("❌ Dictionary is empty! This will cause apronym generation to fail");
+                println!("❌ Dictionary is empty! This will cause apronym generation to fail");
             }
         }
         Err(e) => {
-            tracing::error!("❌ Failed to open dictionary file '{}': {}", dict_path, e);
-            tracing::error!("💡 Current working directory: {:?}", std::env::current_dir());
+            println!("❌ Failed to open dictionary file '{}': {}", dict_path, e);
+            println!("💡 Current working directory: {:?}", std::env::current_dir());
             
             // Try to list the directory to see what's there
             if let Ok(entries) = std::fs::read_dir("/app") {
-                tracing::info!("📁 Contents of /app directory:");
+                println!("📁 Contents of /app directory:");
                 for entry in entries.flatten() {
-                    tracing::info!("  - {:?}", entry.path());
+                    println!("  - {:?}", entry.path());
                 }
             }
             
             if let Ok(entries) = std::fs::read_dir("/app/wordlist") {
-                tracing::info!("📁 Contents of /app/wordlist directory:");
+                println!("📁 Contents of /app/wordlist directory:");
                 for entry in entries.flatten() {
-                    tracing::info!("  - {:?}", entry.path());
+                    println!("  - {:?}", entry.path());
                 }
             } else {
-                tracing::error!("❌ /app/wordlist directory does not exist or cannot be read");
+                println!("❌ /app/wordlist directory does not exist or cannot be read");
             }
             
-            tracing::error!("🚨 Dictionary loading failed - apronym generation will not work!");
+            println!("🚨 Dictionary loading failed - apronym generation will not work!");
         }
     }
     
