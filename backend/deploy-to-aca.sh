@@ -140,6 +140,8 @@ if [[ "$DEPLOY_BACKEND" == "true" ]]; then
       --name $BACKEND_APP_NAME \
       --resource-group $RESOURCE_GROUP \
       --image $ACR_LOGIN_SERVER/apronymer-backend:$IMAGE_TAG \
+      --revision-suffix "$(date +%s)" \
+      --env-vars DEPLOY_TIMESTAMP="$(date +%s)" \
       --cpu 0.5 --memory 1Gi
     force_new_revision $BACKEND_APP_NAME $RESOURCE_GROUP
   else
@@ -162,7 +164,9 @@ if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
     az containerapp update \
       --name $FRONTEND_APP_NAME \
       --resource-group $RESOURCE_GROUP \
-      --image $ACR_LOGIN_SERVER/apronymer-frontend:$IMAGE_TAG
+      --image $ACR_LOGIN_SERVER/apronymer-frontend:$IMAGE_TAG \
+      --revision-suffix "$(date +%s)" \
+      --env-vars DEPLOY_TIMESTAMP="$(date +%s)"
     force_new_revision $FRONTEND_APP_NAME $RESOURCE_GROUP
   else
     az containerapp create \
