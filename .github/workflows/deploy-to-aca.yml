@@ -1,0 +1,53 @@
+name: Deploy to Azure Container Apps
+
+on:
+  workflow_dispatch:
+    inputs:
+      clean:
+        description: 'Delete apps before redeploying'
+        required: false
+        default: 'false'
+      target:
+        description: 'What to deploy'
+        required: false
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - backend
+          - frontend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production  # adjust if needed
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Log in to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Set up deployment flags
+      id: setup
+      run: |
+        echo "FLAGS=" >> $GITHUB_ENV
+        case "${{ github.event.inputs.target }}" in
+          backend) echo "FLAGS=--backend" >> $GITHUB_ENV ;;
+          frontend) echo "FLAGS=--frontend" >> $GITHUB_ENV ;;
+          both|*) echo "FLAGS=--both" >> $GITHUB_ENV ;;
+        esac
+
+        if [[ "${{ github.event.inputs.clean }}" == "true" ]]; then
+          echo "FLAGS=--clean $FLAGS" >> $GITHUB_ENV
+        fi
+
+    - name: Run deployment script
+      env:
+        API_KEY: ${{ secrets.API_KEY }}
+      run: |
+        chmod +x ./backend/deploy-to-aca.sh
+        ./backend/deploy-to-aca.sh $FLAGS
