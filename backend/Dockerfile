@@ -11,21 +11,18 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy Cargo files first for better caching
+# Copy Cargo files and source code
 COPY Cargo.toml Cargo.lock ./
-
-# Create a dummy src/main.rs to cache dependencies
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-
-# Build dependencies (this layer will be cached)
-RUN cargo build --release && rm -rf src
-
-# Copy the actual source code
 COPY src ./src
 COPY wordlist ./wordlist
 
-# Build the actual application
+# Build the application (single build, no complex caching)
 RUN cargo build --release
+
+# Debug: Check the binary size and make sure it's built correctly
+RUN ls -la /app/target/release/ && \
+    file /app/target/release/apronymer && \
+    /app/target/release/apronymer --version || echo "Binary test failed"
 
 # Stage 2: Runtime image
 FROM debian:bookworm-slim
