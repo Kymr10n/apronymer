@@ -56,6 +56,7 @@ readonly FRONTEND_APP_NAME="apronymer-frontend"
 readonly CONTAINER_REGISTRY_NAME="crapronymer"
 readonly ACR_LOGIN_SERVER="${CONTAINER_REGISTRY_NAME}.azurecr.io"
 readonly IMAGE_TAG="latest"
+readonly REV_SUFFIX="$(date +%s)"
 
 # Load .env if present
 if [ -f .env ]; then
@@ -105,97 +106,106 @@ resource_exists() {
   az $type show --name "$name" --resource-group "$group" &>/dev/null
 }
 
-# Helper function: trigger a new revision (optional no-op fallback)
-force_new_revision() {
+# Helper function: clean inactive revisions
+cleanup_old_revisions() {
   local app=$1
-  local group=$2
-  echo -e "${YELLOW}🔄 Forcing new revision for $app (noop placeholder)${NC}"
-  # Placeholder — implement logic if needed
+  echo -e "${YELLOW}🧽 Cleaning up old revisions for $app...${NC}"
+  az containerapp revision list \
+    --name "$app" --resource-group "$RESOURCE_GROUP" \
+    --query "[?active==\`false\`].name" -o tsv |
+  while read rev; do
+    echo -e "${YELLOW}🗑 Deleting old revision: $rev${NC}"
+    az containerapp revision delete \
+      --name "$app" --resource-group "$RESOURCE_GROUP" \
+      --revision "$rev" >/dev/null
+  done
 }
 
-# Build images in parallel
+# Build images
 if [[ "$DEPLOY_BACKEND" == "true" ]]; then
+  echo -e "${YELLOW}🔨 Building backend image...${NC}"
   pushd "$BACKEND_DIR" > /dev/null
-  az acr build --registry $CONTAINER_REGISTRY_NAME --image apronymer-backend:$IMAGE_TAG . &
+  az acr build --registry "$CONTAINER_REGISTRY_NAME" --image apronymer-backend:$IMAGE_TAG . || exit 1
   popd > /dev/null
 fi
 
 if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
+  echo -e "${YELLOW}🎨 Building frontend image...${NC}"
   pushd "$FRONTEND_DIR" > /dev/null
-  az acr build --registry $CONTAINER_REGISTRY_NAME --image apronymer-frontend:$IMAGE_TAG . &
+  az acr build --registry "$CONTAINER_REGISTRY_NAME" --image apronymer-frontend:$IMAGE_TAG . || exit 1
   popd > /dev/null
 fi
 
-wait
-
-# Clean up old apps if needed (optional: not implemented here)
+# Clean up old revisions if requested
 if [[ "$CLEAN_DEPLOYMENT" == "true" ]]; then
-  echo -e "${YELLOW}🧹 Clean deployment requested – skipping since cleanup_container_apps not defined.${NC}"
+  echo -e "${YELLOW}🧹 Clean deployment requested${NC}"
+  [[ "$DEPLOY_BACKEND" == "true" ]] && cleanup_old_revisions "$BACKEND_APP_NAME"
+  [[ "$DEPLOY_FRONTEND" == "true" ]] && cleanup_old_revisions "$FRONTEND_APP_NAME"
 fi
 
 # Deploy backend
 if [[ "$DEPLOY_BACKEND" == "true" ]]; then
-  if resource_exists "containerapp" $BACKEND_APP_NAME $RESOURCE_GROUP; then
+  echo -e "${GREEN}🚀 Deploying backend container app...${NC}"
+  if resource_exists "containerapp" "$BACKEND_APP_NAME" "$RESOURCE_GROUP"; then
     az containerapp update \
-      --name $BACKEND_APP_NAME \
-      --resource-group $RESOURCE_GROUP \
-      --image $ACR_LOGIN_SERVER/apronymer-backend:$IMAGE_TAG \
-      --revision-suffix "$(date +%s)" \
+      --name "$BACKEND_APP_NAME" \
+      --resource-group "$RESOURCE_GROUP" \
+      --image "$ACR_LOGIN_SERVER/apronymer-backend:$IMAGE_TAG" \
+      --revision-suffix "$REV_SUFFIX" \
       --cpu 0.5 --memory 1Gi
-    force_new_revision $BACKEND_APP_NAME $RESOURCE_GROUP
   else
     az containerapp create \
-      --name $BACKEND_APP_NAME \
-      --resource-group $RESOURCE_GROUP \
-      --environment $ENVIRONMENT_NAME \
-      --image $ACR_LOGIN_SERVER/apronymer-backend:$IMAGE_TAG \
-      --registry-server $ACR_LOGIN_SERVER \
+      --name "$BACKEND_APP_NAME" \
+      --resource-group "$RESOURCE_GROUP" \
+      --environment "$ENVIRONMENT_NAME" \
+      --image "$ACR_LOGIN_SERVER/apronymer-backend:$IMAGE_TAG" \
+      --registry-server "$ACR_LOGIN_SERVER" \
       --cpu 0.5 --memory 1Gi \
       --min-replicas 1 --max-replicas 3 \
       --target-port 3000 --ingress external \
-      --env-vars HOST=0.0.0.0 PORT=3000 RUST_LOG=debug API_KEY="$API_KEY" DEPLOY_TIMESTAMP="$(date +%s)"
+      --env-vars HOST=0.0.0.0 PORT=3000 RUST_LOG=debug API_KEY="$API_KEY" DEPLOY_TIMESTAMP="$REV_SUFFIX"
   fi
 fi
 
 # Deploy frontend
 if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
-  if resource_exists "containerapp" $FRONTEND_APP_NAME $RESOURCE_GROUP; then
+  echo -e "${GREEN}🚀 Deploying frontend container app...${NC}"
+  if resource_exists "containerapp" "$FRONTEND_APP_NAME" "$RESOURCE_GROUP"; then
     az containerapp update \
-      --name $FRONTEND_APP_NAME \
-      --resource-group $RESOURCE_GROUP \
-      --image $ACR_LOGIN_SERVER/apronymer-frontend:$IMAGE_TAG \
-      --revision-suffix "$(date +%s)" \
-    force_new_revision $FRONTEND_APP_NAME $RESOURCE_GROUP
+      --name "$FRONTEND_APP_NAME" \
+      --resource-group "$RESOURCE_GROUP" \
+      --image "$ACR_LOGIN_SERVER/apronymer-frontend:$IMAGE_TAG" \
+      --revision-suffix "$REV_SUFFIX"
   else
     az containerapp create \
-      --name $FRONTEND_APP_NAME \
-      --resource-group $RESOURCE_GROUP \
-      --environment $ENVIRONMENT_NAME \
-      --image $ACR_LOGIN_SERVER/apronymer-frontend:$IMAGE_TAG \
-      --registry-server $ACR_LOGIN_SERVER \
+      --name "$FRONTEND_APP_NAME" \
+      --resource-group "$RESOURCE_GROUP" \
+      --environment "$ENVIRONMENT_NAME" \
+      --image "$ACR_LOGIN_SERVER/apronymer-frontend:$IMAGE_TAG" \
+      --registry-server "$ACR_LOGIN_SERVER" \
       --cpu 0.25 --memory 0.5Gi \
       --min-replicas 1 --max-replicas 3 \
       --target-port 8080 --ingress external \
-      --env-vars DEPLOY_TIMESTAMP="$(date +%s)"
+      --env-vars DEPLOY_TIMESTAMP="$REV_SUFFIX"
   fi
 fi
 
 # Final output
-echo -e "${GREEN}✅ Deployment completed. To re-deploy, re-run this script.${NC}"
-echo -e "${YELLOW}🔐 API key was used during build time but not printed for safety.${NC}"
+echo -e "${GREEN}✅ Deployment completed. Revisions tagged with: $REV_SUFFIX${NC}"
+echo -e "${YELLOW}🔐 API_KEY was used securely and not printed${NC}"
 
-# Print deployed URLs if possible
+# Print deployed URLs
 if [[ "$DEPLOY_BACKEND" == "true" ]]; then
-  BACKEND_URL=$(az containerapp show --name $BACKEND_APP_NAME --resource-group $RESOURCE_GROUP --query properties.configuration.ingress.fqdn --output tsv 2>/dev/null)
-  if [[ -n "$BACKEND_URL" ]]; then
-    echo -e "${GREEN}🔗 Backend URL: https://$BACKEND_URL${NC}"
-  fi
-fi
-if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
-  FRONTEND_URL=$(az containerapp show --name $FRONTEND_APP_NAME --resource-group $RESOURCE_GROUP --query properties.configuration.ingress.fqdn --output tsv 2>/dev/null)
-  if [[ -n "$FRONTEND_URL" ]]; then
-    echo -e "${GREEN}🌐 Frontend URL: https://$FRONTEND_URL${NC}"
-  fi
+  BACKEND_URL=$(az containerapp show --name "$BACKEND_APP_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.configuration.ingress.fqdn" -o tsv)
+  REV_NAME=$(az containerapp show --name "$BACKEND_APP_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.latestRevisionName" -o tsv)
+  echo -e "${GREEN}🔗 Backend URL: https://$BACKEND_URL  (rev: $REV_NAME)${NC}"
 fi
 
-echo -e "${YELLOW}📎 Frontend and backend URLs are also available in Azure Portal.${NC}"
+if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
+  FRONTEND_URL=$(az containerapp show --name "$FRONTEND_APP_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.configuration.ingress.fqdn" -o tsv)
+  REV_NAME=$(az containerapp show --name "$FRONTEND_APP_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.latestRevisionName" -o tsv)
+  echo -e "${GREEN}🌐 Frontend URL: https://$FRONTEND_URL  (rev: $REV_NAME)${NC}"
+fi
+
+echo -e "${YELLOW}📎 All apps available via Azure Portal.${NC}"
+# End of script
