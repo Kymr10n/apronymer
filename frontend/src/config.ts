@@ -10,4 +10,4 @@ const getApiBaseUrl = (): string => {
 };
 
 export const API_BASE_URL = getApiBaseUrl();
-export const API_KEY = import.meta.env.PROD ? 'f806867ecacc6edc2b240fa45e43b0ee6f5541d85c84bdb1efd7e4efed129f09' : 'test-api-key';
+export const API_KEY = import.meta.env.VITE_API_KEY;

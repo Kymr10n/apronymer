@@ -9,7 +9,7 @@ services:
       - HOST=0.0.0.0
       - PORT=3000
       - RUST_LOG=debug  # More verbose logging
-      - API_KEY=test-api-key
+      - API_KEY=${API_KEY}
     volumes:
       # Mount source code for development (if you want to rebuild on changes)
       - ./src:/app/src:ro
