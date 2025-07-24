@@ -14,7 +14,11 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the application
+# Accept build argument for API key
+ARG VITE_API_KEY
+ENV VITE_API_KEY=$VITE_API_KEY
+
+# Build the application (Vite will embed VITE_API_KEY into the bundle)
 RUN npm run build
 
 # Stage 2: Serve with Nginx

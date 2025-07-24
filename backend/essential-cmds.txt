@@ -1,0 +1,28 @@
+# this will be a collection of useful troubleshooting cmds
+
+# Get backend API key
+az containerapp show --name apronymer-backend --resource-group rg-apronymer --query "properties.template.containers[0].env[?name=='API_KEY'].value" -o tsv
+
+# Get frontend API key (should match backend)
+az containerapp show --name apronymer-frontend --resource-group rg-apronymer --query "properties.template.containers[0].env[?name=='VITE_API_KEY'].value" -o tsv
+
+# Check which image versions are deployed
+az containerapp show --name apronymer-backend --resource-group rg-apronymer --query "properties.template.containers[0].image" -o tsv
+az containerapp show --name apronymer-frontend --resource-group rg-apronymer --query "properties.template.containers[0].image" -o tsv
+
+# Check backend health
+curl -s https://apronymer-backend.agreeablemushroom-284a0b84.westeurope.azurecontainerapps.io/health | jq
+
+# Test backend API manually
+curl -X POST https://apronymer-backend.agreeablemushroom-284a0b84.westeurope.azurecontainerapps.io/api/generate \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: ruyrP0t8wJ8/hITKFLLkPSjcwxk/EDHX+iJQEzyO7l0=" \
+  -d '{"terms": ["hello", "world"], "frag_len": 2, "min_len": 2, "max_len": 4}'
+
+# Check container status
+az containerapp show --name apronymer-backend --resource-group rg-apronymer --query "properties.runningStatus" -o tsv
+az containerapp show --name apronymer-frontend --resource-group rg-apronymer --query "properties.runningStatus" -o tsv
+
+# View recent logs
+az containerapp logs show --name apronymer-backend --resource-group rg-apronymer --tail 20
+az containerapp logs show --name apronymer-frontend --resource-group rg-apronymer --tail 20

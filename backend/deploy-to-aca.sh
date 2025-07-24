@@ -194,14 +194,14 @@ if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
   echo -e "${YELLOW}🎨 Building frontend image locally...${NC}"
   pushd "$FRONTEND_DIR" > /dev/null
   
-  # Build locally
-  echo -e "${YELLOW}📦 Building Docker image locally...${NC}"
+  # Build locally with API key as build argument
+  echo -e "${YELLOW}📦 Building Docker image locally with API key...${NC}"
   if [[ -n "$GITHUB_ACTIONS" ]]; then
-    # In GitHub Actions, use buildx with explicit load flag
-    docker buildx build --load --no-cache -t apronymer-frontend:$IMAGE_TAG . || exit 1
+    # In GitHub Actions, use buildx with explicit load flag and API key
+    docker buildx build --load --no-cache --build-arg VITE_API_KEY="$API_KEY" -t apronymer-frontend:$IMAGE_TAG . || exit 1
   else
-    # Local development can use regular docker build with cache
-    docker build -t apronymer-frontend:$IMAGE_TAG . || exit 1
+    # Local development can use regular docker build with cache and API key
+    docker build --build-arg VITE_API_KEY="$API_KEY" -t apronymer-frontend:$IMAGE_TAG . || exit 1
   fi
   
   # Tag for ACR
