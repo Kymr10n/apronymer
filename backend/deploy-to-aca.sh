@@ -55,7 +55,7 @@ readonly BACKEND_APP_NAME="apronymer-backend"
 readonly FRONTEND_APP_NAME="apronymer-frontend"
 readonly CONTAINER_REGISTRY_NAME="crapronymer"
 readonly ACR_LOGIN_SERVER="${CONTAINER_REGISTRY_NAME}.azurecr.io"
-readonly IMAGE_TAG="latest"
+readonly IMAGE_TAG="$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
 readonly REV_SUFFIX="$(date +%s)"
 
 # Application configuration
@@ -126,6 +126,14 @@ cleanup_old_revisions() {
   done
 }
 
+# Show deployment info
+echo -e "${GREEN}📋 Deployment Information:${NC}"
+echo -e "${YELLOW}  - Registry: $ACR_LOGIN_SERVER${NC}"
+echo -e "${YELLOW}  - Image Tag: $IMAGE_TAG${NC}"
+echo -e "${YELLOW}  - Revision Suffix: $REV_SUFFIX${NC}"
+echo -e "${YELLOW}  - Backend Dir: $BACKEND_DIR${NC}"
+echo -e "${YELLOW}  - Frontend Dir: $FRONTEND_DIR${NC}"
+
 # Build images
 if [[ "$DEPLOY_BACKEND" == "true" ]]; then
   echo -e "${YELLOW}🔨 Building backend image...${NC}"
@@ -151,14 +159,18 @@ fi
 # Deploy backend
 if [[ "$DEPLOY_BACKEND" == "true" ]]; then
   echo -e "${GREEN}🚀 Deploying backend container app...${NC}"
+  echo -e "${YELLOW}📦 Using image: $ACR_LOGIN_SERVER/apronymer-backend:$IMAGE_TAG${NC}"
+  echo -e "${YELLOW}🏷️  Revision suffix: $REV_SUFFIX${NC}"
+  
   if resource_exists "containerapp" "$BACKEND_APP_NAME" "$RESOURCE_GROUP"; then
+    echo -e "${YELLOW}🔄 Updating existing container app...${NC}"
     az containerapp update \
       --name "$BACKEND_APP_NAME" \
       --resource-group "$RESOURCE_GROUP" \
       --image "$ACR_LOGIN_SERVER/apronymer-backend:$IMAGE_TAG" \
       --revision-suffix "$REV_SUFFIX" \
       --cpu 0.5 --memory 1Gi \
-      --set-env-vars HOST="$BACKEND_HOST" PORT="$BACKEND_PORT" RUST_LOG=debug API_KEY="$API_KEY" DEPLOY_TIMESTAMP="$REV_SUFFIX"
+      --set-env-vars HOST="$BACKEND_HOST" PORT="$BACKEND_PORT" RUST_LOG=debug API_KEY="$API_KEY" DEPLOY_TIMESTAMP="$REV_SUFFIX" IMAGE_TAG="$IMAGE_TAG"
   else
     az containerapp create \
       --name "$BACKEND_APP_NAME" \
@@ -176,13 +188,17 @@ fi
 # Deploy frontend
 if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
   echo -e "${GREEN}🚀 Deploying frontend container app...${NC}"
+  echo -e "${YELLOW}📦 Using image: $ACR_LOGIN_SERVER/apronymer-frontend:$IMAGE_TAG${NC}"
+  echo -e "${YELLOW}🏷️  Revision suffix: $REV_SUFFIX${NC}"
+  
   if resource_exists "containerapp" "$FRONTEND_APP_NAME" "$RESOURCE_GROUP"; then
+    echo -e "${YELLOW}🔄 Updating existing container app...${NC}"
     az containerapp update \
       --name "$FRONTEND_APP_NAME" \
       --resource-group "$RESOURCE_GROUP" \
       --image "$ACR_LOGIN_SERVER/apronymer-frontend:$IMAGE_TAG" \
       --revision-suffix "$REV_SUFFIX" \
-      --set-env-vars VITE_API_KEY="$API_KEY" DEPLOY_TIMESTAMP="$REV_SUFFIX"
+      --set-env-vars VITE_API_KEY="$API_KEY" DEPLOY_TIMESTAMP="$REV_SUFFIX" IMAGE_TAG="$IMAGE_TAG"
   else
     az containerapp create \
       --name "$FRONTEND_APP_NAME" \
