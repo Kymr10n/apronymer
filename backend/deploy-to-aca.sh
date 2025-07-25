@@ -192,6 +192,8 @@ fi
 
 if [[ "$DEPLOY_FRONTEND" == "true" ]]; then
   echo -e "${YELLOW}🎨 Building frontend image locally...${NC}"
+  # Always generate gitversion.txt before building the frontend
+  "$SCRIPT_DIR/../scripts/gen-gitversion.sh"
   pushd "$FRONTEND_DIR" > /dev/null
   
   # Build locally with API key as build argument
