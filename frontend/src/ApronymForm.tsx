@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FormField } from "./FormField";
 import { ResultsList } from "./ResultsList";
 import type { Apronym } from "./ResultsList";
 import { useApronymValidation } from "./useApronymValidation";
+import { useClientRateLimit } from "./useClientRateLimit";
 import { API_BASE_URL, API_KEY } from "./config";
 import { SliderField } from "./SliderField";
 
@@ -22,7 +23,19 @@ export default function ApronymForm() {
     minLen: number;
     maxLen: number;
   } | null>(null);
+  
   const validate = useApronymValidation();
+  const rateLimit = useClientRateLimit({
+    maxRequests: 5,        // 5 requests per minute (more restrictive than backend)
+    windowMs: 60 * 1000,   // 1 minute window
+    cooldownMs: 3 * 1000   // 3 second cooldown between requests
+  });
+
+  // Start auto-updating rate limit state
+  useEffect(() => {
+    const cleanup = rateLimit.startAutoUpdate();
+    return cleanup;
+  }, [rateLimit]);
 
   // Calculate dynamic slider ranges
   const termsArr = terms.split(",").map(t => t.trim()).filter(Boolean);
@@ -42,17 +55,26 @@ export default function ApronymForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Client-side rate limiting check
+    if (!rateLimit.attemptRequest()) {
+      alert(rateLimit.lastBlockedReason || "Please wait before submitting again");
+      return;
+    }
+    
     const { validTerms, error } = validate(terms, fragLen, minLen, maxLen);
     if (error) {
       alert(error);
       return;
     }
+    
     const requestPayload = {
       terms: validTerms,
       fragLen,
       minLen,
       maxLen,
     };
+    
     if (
       lastRequest &&
       JSON.stringify(lastRequest) === JSON.stringify(requestPayload)
@@ -60,6 +82,7 @@ export default function ApronymForm() {
       alert("You already submitted this request. Please change something first.");
       return;
     }
+    
     setLoading(true);
     setResults([]);
     try {
@@ -76,6 +99,11 @@ export default function ApronymForm() {
           max_len: maxLen,
         }),
       });
+      
+      if (response.status === 429) {
+        throw new Error("Rate limit exceeded. Please wait a moment before trying again.");
+      }
+      
       if (!response.ok) throw new Error("Failed to fetch results");
       const data: Apronym[] = await response.json();
       setResults(data);
@@ -132,12 +160,43 @@ export default function ApronymForm() {
         />
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white py-3 rounded text-base sm:text-lg hover:bg-blue-600"
+          disabled={loading || !rateLimit.canSubmit}
+          className={`w-full py-3 rounded text-base sm:text-lg transition-colors ${
+            loading || !rateLimit.canSubmit
+              ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+              : "bg-blue-500 text-white hover:bg-blue-600"
+          }`}
           style={{ minHeight: 44 }}
         >
-          {loading ? "Generating..." : "Generate"}
+          {loading 
+            ? "Generating..." 
+            : !rateLimit.canSubmit 
+              ? `Wait ${Math.ceil(rateLimit.timeUntilReset / 1000)}s` 
+              : `Generate (${rateLimit.requestsRemaining} left)`
+          }
         </button>
+        {!rateLimit.canSubmit && rateLimit.lastBlockedReason && (
+          <p className="text-red-600 text-sm text-center mt-2">
+            {rateLimit.lastBlockedReason}
+          </p>
+        )}
       </form>
+      
+      {/* Rate limit info */}
+      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="text-xs text-blue-800">
+          <div className="font-medium">Rate Limit Status:</div>
+          <div className="mt-1">
+            Requests remaining: <span className="font-mono">{rateLimit.requestsRemaining}/{rateLimit.config.maxRequests}</span>
+          </div>
+          {rateLimit.timeUntilReset > 0 && (
+            <div className="mt-1">
+              Reset in: <span className="font-mono">{Math.ceil(rateLimit.timeUntilReset / 1000)}s</span>
+            </div>
+          )}
+        </div>
+      </div>
+      
       <ResultsList results={results} loading={loading} />
       <button
         type="button"
