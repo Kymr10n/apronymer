@@ -4,6 +4,7 @@ import { ResultsList } from "./ResultsList";
 import type { Apronym } from "./ResultsList";
 import { useApronymValidation } from "./useApronymValidation";
 import { API_BASE_URL, API_KEY } from "./config";
+import { SliderField } from "./SliderField";
 
 /**
  * ApronymForm: Main form for generating apronynms.
@@ -23,6 +24,22 @@ export default function ApronymForm() {
   } | null>(null);
   const validate = useApronymValidation();
 
+  // Calculate dynamic slider ranges
+  const termsArr = terms.split(",").map(t => t.trim()).filter(Boolean);
+  const numTerms = termsArr.length || 1;
+  const minTermLength = termsArr.reduce((min, t) => t.length < min ? t.length : min, 99);
+  const fragLenMax = minTermLength > 0 ? Math.min(3, minTermLength) : 3;
+  const maxLenMax = numTerms;
+  const minLenMax = Math.max(1, Math.min(maxLen, 10));
+
+  // Clamp values if user input goes out of bounds
+  if (fragLen > fragLenMax) setFragLen(fragLenMax);
+  if (maxLen > maxLenMax) setMaxLen(maxLenMax);
+  if (minLen > minLenMax) setMinLen(minLenMax);
+  if (minLen < 1) setMinLen(1);
+  if (fragLen < 1) setFragLen(1);
+  if (maxLen < 1) setMaxLen(1);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const { validTerms, error } = validate(terms, fragLen, minLen, maxLen);
@@ -30,7 +47,6 @@ export default function ApronymForm() {
       alert(error);
       return;
     }
-    // Fragment length validation is now handled in the validation hook
     const requestPayload = {
       terms: validTerms,
       fragLen,
@@ -83,44 +99,27 @@ export default function ApronymForm() {
           inputMode="text"
           autoComplete="off"
         />
-        <FormField
+        <SliderField
           label="Fragment Length:"
-          type="number"
           value={fragLen}
-          onChange={e => {
-            const val = e.target.value === "" ? 1 : Number(e.target.value);
-            setFragLen(val);
-          }}
           min={1}
-          max={3}
-          inputMode="numeric"
+          max={fragLenMax}
+          onChange={setFragLen}
         />
-        <FormField
-          label="Min Length:"
-          type="number"
-          value={minLen}
-          onChange={e => {
-            const val = e.target.value === "" ? 1 : Number(e.target.value);
-            setMinLen(val);
-          }}
-          min={1}
-          inputMode="numeric"
-        />
-        <FormField
+        <SliderField
           label="Max Length:"
-          type="number"
           value={maxLen}
-          onChange={e => {
-            const val = e.target.value === "" ? 1 : Number(e.target.value);
-            setMaxLen(val);
-          }}
           min={1}
-          max={Math.min(10, fragLen * terms.split(",").filter(t => t.trim().length > 0).length)}
-          inputMode="numeric"
+          max={maxLenMax}
+          onChange={setMaxLen}
         />
-        <small className="text-gray-500 block mt-1">
-          Maximum possible: {fragLen * terms.split(",").filter(t => t.trim().length > 0).length}
-        </small>
+        <SliderField
+          label="Min Length:"
+          value={minLen}
+          min={1}
+          max={minLenMax}
+          onChange={setMinLen}
+        />
         <button
           type="submit"
           className="w-full bg-blue-500 text-white py-3 rounded text-base sm:text-lg hover:bg-blue-600"
