@@ -18,8 +18,41 @@ on:
           - frontend
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Lint backend (cargo clippy)
+        run: |
+          cd backend
+          cargo clippy --all -- -D warnings
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Lint frontend (eslint)
+        run: |
+          cd frontend
+          npm run lint
+
   test:
     runs-on: ubuntu-latest
+    needs: [lint]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
