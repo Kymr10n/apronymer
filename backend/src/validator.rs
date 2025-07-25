@@ -10,8 +10,8 @@ pub fn validate_generate_request(payload: &GenerateRequest) -> Result<(), Respon
     tracing::info!("Validating generate request: terms={:?}, frag_len={}, min_len={}, max_len={}", payload.terms, payload.frag_len, payload.min_len, payload.max_len);
 
     // Check for empty input
-    if payload.terms.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "Please enter at least one valid term.").into_response());
+    if payload.terms.len() < 3 {
+        return Err((StatusCode::BAD_REQUEST, "Please enter at least three valid terms.").into_response());
     }
     // Check for too many terms
     if payload.terms.len() > 10 {

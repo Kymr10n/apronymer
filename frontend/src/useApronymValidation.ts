@@ -53,6 +53,9 @@ export function useApronymValidation() {
     if (fragLen > minTermLength) {
       return { validTerms: [], error: `Fragment Length (${fragLen}) must not be greater than the length of the smallest term (${minTermLength}).` };
     }
+    if (termsArray.length < 3) {
+      return { validTerms: [], error: "Please enter at least three valid terms." };
+    }
     return { validTerms, error: null };
   }, []);
 }

@@ -12,8 +12,8 @@ import { SliderField } from "./SliderField";
 export default function ApronymForm() {
   const [terms, setTerms] = useState("");
   const [fragLen, setFragLen] = useState(1);
-  const [minLen, setMinLen] = useState(2);
-  const [maxLen, setMaxLen] = useState(4);
+  const [minLen, setMinLen] = useState(3);
+  const [maxLen, setMaxLen] = useState(3);
   const [results, setResults] = useState<Apronym[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastRequest, setLastRequest] = useState<{
