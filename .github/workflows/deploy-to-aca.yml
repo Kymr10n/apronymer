@@ -54,3 +54,31 @@ jobs:
       run: |
         chmod +x ./backend/deploy-to-aca.sh
         ./backend/deploy-to-aca.sh $FLAGS
+
+    - name: Get backend FQDN from Azure
+      id: get-fqdn
+      run: |
+        set -e
+        FQDN=$(az containerapp show \
+          --name apronymer-backend \
+          --resource-group rg-apronymer \
+          --query properties.configuration.ingress.fqdn \
+          -o tsv)
+        echo "fqdn=$FQDN" >> $GITHUB_OUTPUT
+
+    - name: Wait for backend to become available
+      run: sleep 30
+
+    - name: Health check (backend)
+      run: |
+        set -e
+        BACKEND_URL="https://${{ steps.get-fqdn.outputs.fqdn }}/health"
+        echo "Checking $BACKEND_URL"
+        response=$(curl -sf "$BACKEND_URL")
+        echo "$response"
+        status=$(echo "$response" | jq -r .status)
+        if [ "$status" != "healthy" ]; then
+          echo "❌ Health check failed: status=$status"
+          exit 1
+        fi
+        echo "✅ Health check passed: status=$status"
