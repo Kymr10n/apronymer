@@ -1,3 +1,4 @@
+// ...existing code...
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -95,5 +96,16 @@ pub fn is_valid_word(word: &str) -> bool {
             tracing::error!("Dictionary lock poisoned: {}", e);
             false // Fail safely - don't crash the server
         }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_dictionary_loads_and_contains_word() {
+        // The dictionary should load and contain at least one word (if words.txt is present)
+        let dict = DICTIONARY.read().unwrap();
+        // This test passes if the dictionary is not empty
+        assert!(!dict.is_empty(), "Dictionary should not be empty if words.txt is present");
     }
 }

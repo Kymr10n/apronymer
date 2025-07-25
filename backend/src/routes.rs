@@ -1,3 +1,21 @@
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::routes::GenerateRequest;
+
+    #[tokio::test]
+    async fn test_generate_handler_validation_error() {
+        let payload = GenerateRequest {
+            terms: vec!["a".to_string(), "b".to_string()], // too few terms
+            frag_len: 2,
+            min_len: 3,
+            max_len: 3,
+        };
+        let response = generate(axum::Json(payload)).await.into_response();
+        // Should be a validation error (400)
+        assert_eq!(response.status(), axum::http::StatusCode::BAD_REQUEST);
+    }
+}
 // Route handlers and API types for the backend
 use axum::{Json, Router, response::IntoResponse, routing::post, extract::Extension};
 use serde::{Deserialize, Serialize};

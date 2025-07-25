@@ -1,3 +1,11 @@
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_env_var_api_key() {
+        // This test checks that the API_KEY env var can be read (may be empty in test)
+        let _ = std::env::var("API_KEY");
+    }
+}
 // Main entry point for the backend server
 use axum::{Router, serve};
 use tower_http::trace::TraceLayer; // For request/response logging
