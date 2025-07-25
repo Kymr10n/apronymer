@@ -6,11 +6,15 @@ use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tracing_subscriber::{fmt, EnvFilter}; // For logging
 use std::env;
+use std::time::Duration;
 
 mod routes;      // API route handlers
 mod validator;   // Request validation logic
 mod generator;   // Apronym generation logic
 mod dictionary;  // Dictionary lookup logic
+mod rate_limiter; // Rate limiting middleware
+
+use rate_limiter::{RateLimiter, RateLimiterConfig};
 
 /// Middleware to check API key in request header
 async fn require_api_key(
@@ -84,10 +88,25 @@ async fn main() {
                 tracing::error!("🔧 Please check that the wordlist file is properly mounted in the container.");
             }
 
+            // Initialize rate limiter
+            tracing::info!("🔄 Setting up rate limiter...");
+            let rate_limiter_config = RateLimiterConfig {
+                max_requests: 10,                           // 10 requests
+                window_duration: Duration::from_secs(60),   // per minute
+                cleanup_interval: Duration::from_secs(300), // cleanup every 5 minutes
+            };
+            let rate_limiter = RateLimiter::with_config(rate_limiter_config);
+            tracing::info!("✅ Rate limiter configured: 10 requests per minute per IP");
+
             // Build the Axum app with health endpoint accessible and API routes protected
             let app = Router::new()
-                .route("/health", axum::routing::get(routes::health)) // Health endpoint without API key
-                .nest("/api", routes::routes().layer(axum::middleware::from_fn(require_api_key))) // API routes with API key
+                .route("/health", axum::routing::get(routes::health)) // Health endpoint without API key or rate limiting
+                .nest("/api", 
+                    routes::routes()
+                        .layer(axum::middleware::from_fn(rate_limiter::rate_limit_middleware)) // Rate limiting first
+                        .layer(axum::middleware::from_fn(require_api_key)) // Then API key check
+                )
+                .layer(axum::Extension(rate_limiter)) // Add rate limiter to all routes
                 .layer(TraceLayer::new_for_http()) // Add request logging
                 .layer(
                     CorsLayer::new()
