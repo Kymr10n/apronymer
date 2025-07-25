@@ -24,20 +24,16 @@ RUN ls -la /app/target/release/ && \
     file /app/target/release/apronymer && \
     /app/target/release/apronymer --version || echo "Binary test failed"
 
-# Stage 2: Runtime image
 FROM debian:bookworm-slim
-
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create app user for security
-RUN useradd -r -s /bin/false appuser
-
-# Set working directory
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
+COPY --from=builder /app/target/release/apronymer /app/apronymer
+COPY wordlist ./wordlist
+COPY static ./static
+EXPOSE 3000
+ENV RUST_LOG=info
+USER nobody
+CMD ["/app/apronymer"]
 
 # Copy the binary from builder stage
 COPY --from=builder /app/target/release/apronymer /app/apronymer
