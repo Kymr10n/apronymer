@@ -88,6 +88,16 @@ export default function ApronymForm() {
     }
   };
 
+  // Feedback button handler
+  const handleFeedback = () => {
+    const title = encodeURIComponent("Feedback: Apronym Generator");
+    const body = encodeURIComponent(
+      `**Describe your feedback or issue:**\n\n\n---\n**Form State:**\n- Terms: ${terms}\n- Fragment Length: ${fragLen}\n- Min Length: ${minLen}\n- Max Length: ${maxLen}`
+    );
+    const url = `https://github.com/Kymr10n/apronymer/issues/new?title=${title}&body=${body}`;
+    window.open(url, "_blank");
+  };
+
   return (
     <div className="max-w-md mx-auto">
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -129,6 +139,13 @@ export default function ApronymForm() {
         </button>
       </form>
       <ResultsList results={results} loading={loading} />
+      <button
+        type="button"
+        className="mt-6 w-full bg-gray-200 text-gray-800 py-2 rounded hover:bg-gray-300 text-base"
+        onClick={handleFeedback}
+      >
+        Feedback / Report Issue
+      </button>
     </div>
   );
 }
