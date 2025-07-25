@@ -44,10 +44,6 @@ export function useApronymValidation() {
     if (validTerms.length !== uniqueTerms.length) {
       return { validTerms: [], error: "Terms must only contain letters (A-Z)." };
     }
-    const maxPossibleLength = fragLen * validTerms.length;
-    if (maxLen > maxPossibleLength) {
-      return { validTerms: [], error: `Max Length cannot exceed ${maxPossibleLength} (Fragment Length × Number of Terms).` };
-    }
     const hasVowelStart = validTerms.some((t) => /^[aeiouAEIOU]/.test(t));
     if (!hasVowelStart) {
       return { validTerms: [], error: "At least one term must start with a vowel (A, E, I, O, U)." };

@@ -33,12 +33,10 @@ pub fn validate_generate_request(payload: &GenerateRequest) -> Result<(), Respon
         return Err((StatusCode::BAD_REQUEST, "Max Length must be greater than or equal to Min Length.").into_response());
     }
     
-    // Calculate maximum possible apronym length (frag_len * number_of_terms)
-    let max_possible_length = payload.frag_len * payload.terms.len();
-    if payload.max_len > max_possible_length {
-        return Err((StatusCode::BAD_REQUEST, format!("Max Length cannot exceed {max_possible_length} (Fragment Length × Number of Terms)")).into_response());
+    // Only check max_len against number of terms
+    if payload.max_len > payload.terms.len() {
+        return Err((StatusCode::BAD_REQUEST, "Max Length cannot exceed the number of terms provided.").into_response());
     }
-    
     // Safety check: prevent excessive computational complexity
     // This prevents potential DoS attacks or server overload
     let max_combinations = (payload.frag_len as u32).pow(payload.max_len as u32);
@@ -61,9 +59,6 @@ pub fn validate_generate_request(payload: &GenerateRequest) -> Result<(), Respon
     }
     
     // All terms are valid for the specified frag_len
-    if payload.max_len > payload.terms.len() {
-        return Err((StatusCode::BAD_REQUEST, "Max Length cannot exceed the number of terms provided.").into_response());
-    }
     // Check for only alphabetic terms
     if payload.terms.iter().any(|t| !t.chars().all(|c| c.is_alphabetic())) {
         return Err((StatusCode::BAD_REQUEST, "Terms must only contain letters (A-Z)." ).into_response());
