@@ -16,7 +16,7 @@ static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
     } else {
         "./wordlist/words.txt"
     };
-    println!("📖 Loading dictionary from: {}", dict_path);
+    println!("📖 Loading dictionary from: {dict_path}");
     
     match File::open(dict_path) {
         Ok(file) => {
@@ -39,13 +39,13 @@ static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
                 }
             }
             
-            println!("✅ Dictionary loaded successfully with {} words", word_count);
+            println!("✅ Dictionary loaded successfully with {word_count} words");
             if word_count == 0 {
                 println!("❌ Dictionary is empty! This will cause apronym generation to fail");
             }
         }
         Err(e) => {
-            println!("❌ Failed to open dictionary file '{}': {}", dict_path, e);
+            println!("❌ Failed to open dictionary file '{dict_path}': {e}");
             println!("💡 Current working directory: {:?}", std::env::current_dir());
             
             // Try to list the directory to see what's there
