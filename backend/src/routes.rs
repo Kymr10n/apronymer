@@ -2,7 +2,7 @@
 use axum::{Json, Router, response::IntoResponse, routing::post, extract::Extension};
 use serde::{Deserialize, Serialize};
 
-use crate::generator::generate_apronyms; // Apronym generation logic
+use crate::generator::{generate_apronyms_with_limit}; // Optimized generation logic
 use crate::validator::validate_generate_request; // Request validation
 use crate::dictionary; // Dictionary access
 use crate::rate_limiter::{RateLimiter, RateLimiterStats}; // Rate limiter
@@ -30,7 +30,8 @@ pub async fn generate(Json(payload): Json<GenerateRequest>) -> impl IntoResponse
         tracing::warn!("Validation failed for /generate: terms={:?}, frag_len={}, min_len={}, max_len={}", payload.terms, payload.frag_len, payload.min_len, payload.max_len);
         return err;
     }
-    let results = generate_apronyms(payload.terms, payload.frag_len, payload.min_len, payload.max_len);
+    // Use optimized generation with reasonable result limit for better performance
+    let results = generate_apronyms_with_limit(payload.terms, payload.frag_len, payload.min_len, payload.max_len, 100);
     tracing::info!("Generated {} apronyms", results.len());
     Json(results).into_response()
 }

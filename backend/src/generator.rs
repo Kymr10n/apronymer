@@ -1,12 +1,11 @@
-// ...existing code...
 use itertools::Itertools;
+use rayon::prelude::*;
 use crate::{dictionary::is_valid_word, routes::Apronym};
 
-/// Generate possible apronyms based on input terms
+/// Generate possible apronyms based on input terms (optimized version)
 /// 
 /// This function creates apronyms by taking variable-length prefixes from each term
-/// and combining them in different permutations. For each permutation, it generates
-/// all possible combinations of prefix lengths (1 to frag_len) for each selected term.
+/// and combining them in different permutations. Uses parallel processing for better performance.
 /// 
 /// # Arguments
 /// * `terms` - Vector of input terms to create apronyms from
@@ -17,13 +16,22 @@ use crate::{dictionary::is_valid_word, routes::Apronym};
 /// # Returns
 /// Vector of valid apronyms that exist in the dictionary
 pub fn generate_apronyms(terms: Vec<String>, frag_len: usize, min_len: usize, max_len: usize) -> Vec<Apronym> {
+    generate_apronyms_with_limit(terms, frag_len, min_len, max_len, 100) // Default limit of 100 results
+}
+
+/// Generate apronyms with a configurable result limit for performance optimization
+pub fn generate_apronyms_with_limit(
+    terms: Vec<String>, 
+    frag_len: usize, 
+    min_len: usize, 
+    max_len: usize,
+    max_results: usize
+) -> Vec<Apronym> {
     tracing::info!(
-        "Starting apronym generation: {} terms, frag_len={}, min_len={}, max_len={}", 
-        terms.len(), frag_len, min_len, max_len
+        "Starting optimized apronym generation: {} terms, frag_len={}, min_len={}, max_len={}, max_results={}", 
+        terms.len(), frag_len, min_len, max_len, max_results
     );
     tracing::debug!("Input terms: {:?}", terms);
-
-    let mut matches = Vec::new();
 
     // Generate all possible permutations of term indices
     let permutations = permutate(terms.len(), min_len, max_len);
@@ -34,12 +42,96 @@ pub fn generate_apronyms(terms: Vec<String>, frag_len: usize, min_len: usize, ma
         .sum::<usize>();
     tracing::info!("Processing {} total fragment combinations", total_combinations);
 
+    // Early exit if no permutations
+    if permutations.is_empty() {
+        return Vec::new();
+    }
+
+    // Use adaptive processing: parallel for large workloads, sequential for small ones
+    let use_parallel = total_combinations > 1000 || permutations.len() > 10;
+    
+    let matches = if use_parallel {
+        tracing::debug!("Using parallel processing for large workload");
+        generate_parallel(&terms, &permutations, frag_len, max_results)
+    } else {
+        tracing::debug!("Using sequential processing for small workload");
+        generate_sequential(&terms, &permutations, frag_len, max_results)
+    };
+
+    tracing::info!("Generated {} valid apronyms (limit: {})", matches.len(), max_results);
+    tracing::debug!("Valid apronyms: {:?}", matches.iter().map(|a| &a.text).collect::<Vec<_>>());
+    
+    matches
+}
+
+/// Generate apronyms using parallel processing for large workloads
+fn generate_parallel(
+    terms: &[String], 
+    permutations: &[Vec<usize>], 
+    frag_len: usize, 
+    max_results: usize
+) -> Vec<Apronym> {
+    // Use a shared counter for early termination
+    let found_count = std::sync::atomic::AtomicUsize::new(0);
+    
+    // Use parallel processing to handle permutations concurrently
+    let all_matches: Vec<Vec<Apronym>> = permutations
+        .par_iter()
+        .enumerate()
+        .filter_map(|(perm_idx, perm)| {
+            // Check if we've already found enough results
+            if found_count.load(std::sync::atomic::Ordering::Relaxed) >= max_results {
+                return None;
+            }
+            
+            tracing::trace!("Processing permutation {}/{}: {:?}", perm_idx + 1, permutations.len(), perm);
+            
+            let total_combinations = frag_len.pow(perm.len() as u32);
+            
+            // Safety check: prevent potential overflow or excessive computation
+            if total_combinations > 10_000 {
+                tracing::warn!("Skipping permutation with {} combinations (exceeds safety limit)", total_combinations);
+                return None;
+            }
+            
+            // Process this permutation and collect matches
+            let perm_matches = process_permutation_with_limit(terms, perm, frag_len, total_combinations, max_results, &found_count);
+            
+            if !perm_matches.is_empty() {
+                let new_count = found_count.fetch_add(perm_matches.len(), std::sync::atomic::Ordering::Relaxed);
+                tracing::trace!("Found {} matches for permutation {:?} (total: {})", perm_matches.len(), perm, new_count + perm_matches.len());
+                Some(perm_matches)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    // Flatten the results and take only up to max_results
+    all_matches
+        .into_iter()
+        .flatten()
+        .take(max_results)
+        .collect()
+}
+
+/// Generate apronyms using sequential processing for small workloads
+fn generate_sequential(
+    terms: &[String], 
+    permutations: &[Vec<usize>], 
+    frag_len: usize, 
+    max_results: usize
+) -> Vec<Apronym> {
+    let mut matches = Vec::new();
+    
     for (perm_idx, perm) in permutations.iter().enumerate() {
-        tracing::debug!("Processing permutation {}/{}: {:?}", perm_idx + 1, permutations.len(), perm);
+        // Early exit if we have enough results
+        if matches.len() >= max_results {
+            break;
+        }
         
-        // For each permutation, generate all possible fragment length combinations
-        // i represents a number in base frag_len, where each digit corresponds to 
-        // the fragment length (1-frag_len) for the term at that position
+        tracing::trace!("Processing permutation {}/{}: {:?}", perm_idx + 1, permutations.len(), perm);
+        
         let total_combinations = frag_len.pow(perm.len() as u32);
         
         // Safety check: prevent potential overflow or excessive computation
@@ -48,7 +140,13 @@ pub fn generate_apronyms(terms: Vec<String>, frag_len: usize, min_len: usize, ma
             continue;
         }
         
+        // Process this permutation sequentially
         for i in 0..total_combinations {
+            // Early exit if we have enough results
+            if matches.len() >= max_results {
+                break;
+            }
+            
             let mut apronym = Apronym {
                 text: String::new(),
                 terms: Vec::new(),
@@ -57,7 +155,6 @@ pub fn generate_apronyms(terms: Vec<String>, frag_len: usize, min_len: usize, ma
             // Build the apronym by extracting fragments from each selected term
             for j in 0..perm.len() {
                 // Calculate fragment length for term at position j
-                // This uses base frag_len arithmetic to generate all combinations
                 let fragment_length = (i / frag_len.pow(j as u32) % frag_len) + 1;
                 
                 let term = &terms[perm[j]];
@@ -74,16 +171,81 @@ pub fn generate_apronyms(terms: Vec<String>, frag_len: usize, min_len: usize, ma
 
             // Check if the generated text is a valid dictionary word
             if is_valid_word(&apronym.text) {
-                tracing::debug!("Found valid apronym: '{}' from terms {:?}", apronym.text, apronym.terms);
+                tracing::trace!("Found valid apronym: '{}' from terms {:?}", apronym.text, apronym.terms);
                 matches.push(apronym);
             }
         }
     }
-
-    tracing::info!("Generated {} valid apronyms", matches.len());
-    tracing::debug!("Valid apronyms: {:?}", matches.iter().map(|a| &a.text).collect::<Vec<_>>());
     
     matches
+}
+
+/// Process a single permutation to generate apronyms with early termination
+/// 
+/// This function handles the fragment length combinations for a specific permutation
+/// and returns all valid apronyms found, with early exit when limit is reached.
+fn process_permutation_with_limit(
+    terms: &[String], 
+    perm: &[usize], 
+    frag_len: usize, 
+    total_combinations: usize,
+    max_results: usize,
+    found_count: &std::sync::atomic::AtomicUsize
+) -> Vec<Apronym> {
+    let mut matches = Vec::new();
+    
+    for i in 0..total_combinations {
+        // Check if we've already found enough results globally
+        if found_count.load(std::sync::atomic::Ordering::Relaxed) >= max_results {
+            break;
+        }
+        
+        let mut apronym = Apronym {
+            text: String::new(),
+            terms: Vec::new(),
+        };
+
+        // Build the apronym by extracting fragments from each selected term
+        for j in 0..perm.len() {
+            // Calculate fragment length for term at position j
+            // This uses base frag_len arithmetic to generate all combinations
+            let fragment_length = (i / frag_len.pow(j as u32) % frag_len) + 1;
+            
+            let term = &terms[perm[j]];
+            
+            // Safety check: ensure fragment_length doesn't exceed term length
+            let safe_fragment_length = fragment_length.min(term.chars().count());
+            let fragment: String = term.chars().take(safe_fragment_length).collect();
+            
+            apronym.text += &fragment;
+            apronym.terms.push(term.clone());
+        }
+
+        tracing::trace!("Generated candidate: '{}' from terms {:?}", apronym.text, apronym.terms);
+
+        // Check if the generated text is a valid dictionary word
+        if is_valid_word(&apronym.text) {
+            tracing::trace!("Found valid apronym: '{}' from terms {:?}", apronym.text, apronym.terms);
+            matches.push(apronym);
+        }
+    }
+    
+    matches
+}
+
+/// Process a single permutation to generate apronyms (legacy function for backward compatibility)
+/// 
+/// This function handles the fragment length combinations for a specific permutation
+/// and returns all valid apronyms found.
+#[allow(dead_code)]
+fn process_permutation(
+    terms: &[String], 
+    perm: &[usize], 
+    frag_len: usize, 
+    total_combinations: usize
+) -> Vec<Apronym> {
+    let found_count = std::sync::atomic::AtomicUsize::new(0);
+    process_permutation_with_limit(terms, perm, frag_len, total_combinations, usize::MAX, &found_count)
 }
 
 /// Generate permutations of indices based on term count
