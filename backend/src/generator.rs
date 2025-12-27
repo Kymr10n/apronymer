@@ -233,21 +233,6 @@ fn process_permutation_with_limit(
     matches
 }
 
-/// Process a single permutation to generate apronyms (legacy function for backward compatibility)
-/// 
-/// This function handles the fragment length combinations for a specific permutation
-/// and returns all valid apronyms found.
-#[allow(dead_code)]
-fn process_permutation(
-    terms: &[String], 
-    perm: &[usize], 
-    frag_len: usize, 
-    total_combinations: usize
-) -> Vec<Apronym> {
-    let found_count = std::sync::atomic::AtomicUsize::new(0);
-    process_permutation_with_limit(terms, perm, frag_len, total_combinations, usize::MAX, &found_count)
-}
-
 /// Generate permutations of indices based on term count
 /// 
 /// Creates all possible permutations of term indices for apronym lengths
