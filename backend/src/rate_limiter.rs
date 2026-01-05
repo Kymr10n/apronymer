@@ -1,14 +1,14 @@
 // ...existing code...
 // Rate limiting middleware using sliding window algorithm
 use axum::{
+    body::Body,
     extract::ConnectInfo,
     http::{Request, StatusCode},
     middleware::Next,
     response::Response,
-    body::Body,
 };
 use dashmap::DashMap;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::{
     net::SocketAddr,
     sync::Arc,
@@ -30,9 +30,9 @@ pub struct RateLimiterConfig {
 impl Default for RateLimiterConfig {
     fn default() -> Self {
         Self {
-            max_requests: 10,                                    // 10 requests
-            window_duration: Duration::from_secs(60),            // per minute
-            cleanup_interval: Duration::from_secs(300),          // cleanup every 5 minutes
+            max_requests: 10,                           // 10 requests
+            window_duration: Duration::from_secs(60),   // per minute
+            cleanup_interval: Duration::from_secs(300), // cleanup every 5 minutes
         }
     }
 }
@@ -55,15 +55,15 @@ impl RequestEntry {
     /// Add a new request timestamp and clean old ones
     fn add_request(&mut self, config: &RateLimiterConfig) -> bool {
         let now = Instant::now();
-        
+
         // Clean old timestamps outside the window
         self.cleanup_old_timestamps(now, config.window_duration);
-        
+
         // Check if we've exceeded the rate limit
         if self.timestamps.len() >= config.max_requests as usize {
             return false; // Rate limit exceeded
         }
-        
+
         // Add the new request
         self.timestamps.push(now);
         true
@@ -77,14 +77,21 @@ impl RequestEntry {
     }
 
     /// Check if this entry should be removed (no requests in window + cleanup interval)
-    fn should_expire(&self, now: Instant, window_duration: Duration, cleanup_interval: Duration) -> bool {
+    fn should_expire(
+        &self,
+        now: Instant,
+        window_duration: Duration,
+        cleanup_interval: Duration,
+    ) -> bool {
         if self.timestamps.is_empty() {
             return now.duration_since(self.last_cleanup) > cleanup_interval;
         }
-        
+
         // Check if all timestamps are older than window + cleanup interval
         let expire_cutoff = now - (window_duration + cleanup_interval);
-        self.timestamps.iter().all(|&timestamp| timestamp < expire_cutoff)
+        self.timestamps
+            .iter()
+            .all(|&timestamp| timestamp < expire_cutoff)
     }
 }
 
@@ -124,13 +131,17 @@ impl RateLimiter {
             let mut interval = time::interval(config.cleanup_interval);
             loop {
                 interval.tick().await;
-                
+
                 let now = Instant::now();
                 let mut expired_keys = Vec::new();
 
                 // Find expired entries
                 for entry in clients.iter() {
-                    if entry.value().should_expire(now, config.window_duration, config.cleanup_interval) {
+                    if entry.value().should_expire(
+                        now,
+                        config.window_duration,
+                        config.cleanup_interval,
+                    ) {
                         expired_keys.push(entry.key().clone());
                     }
                 }
@@ -147,7 +158,10 @@ impl RateLimiter {
 
     /// Check if a request should be allowed for the given client IP
     pub fn check_rate_limit(&self, client_ip: &str) -> bool {
-        let mut entry = self.clients.entry(client_ip.to_string()).or_insert_with(RequestEntry::new);
+        let mut entry = self
+            .clients
+            .entry(client_ip.to_string())
+            .or_insert_with(RequestEntry::new);
         entry.add_request(&self.config)
     }
 
@@ -204,10 +218,7 @@ fn get_client_ip(req: &Request<Body>) -> String {
 }
 
 /// Axum middleware function for rate limiting
-pub async fn rate_limit_middleware(
-    req: Request<Body>,
-    next: Next,
-) -> Result<Response, StatusCode> {
+pub async fn rate_limit_middleware(req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
     // Get rate limiter from request extensions (injected by main.rs)
     let rate_limiter = req
         .extensions()
@@ -215,7 +226,7 @@ pub async fn rate_limit_middleware(
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let client_ip = get_client_ip(&req);
-    
+
     if rate_limiter.check_rate_limit(&client_ip) {
         tracing::debug!("Rate limit OK for client: {}", client_ip);
         Ok(next.run(req).await)
@@ -276,7 +287,7 @@ mod tests {
     #[tokio::test]
     async fn test_different_clients() {
         let rate_limiter = RateLimiter::new();
-        
+
         let client1 = "192.168.1.1";
         let client2 = "192.168.1.2";
 

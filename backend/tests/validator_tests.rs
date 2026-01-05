@@ -1,5 +1,5 @@
-use apronymer::validator::validate_generate_request;
 use apronymer::routes::GenerateRequest;
+use apronymer::validator::validate_generate_request;
 
 fn valid_request() -> GenerateRequest {
     GenerateRequest {
@@ -18,7 +18,12 @@ fn test_valid_request_passes() {
 
 #[test]
 fn test_empty_terms_fails() {
-    let req = GenerateRequest { terms: vec![], frag_len: 1, min_len: 2, max_len: 3 };
+    let req = GenerateRequest {
+        terms: vec![],
+        frag_len: 1,
+        min_len: 2,
+        max_len: 3,
+    };
     assert!(validate_generate_request(&req).is_err());
 }
 
@@ -50,7 +55,7 @@ fn test_max_length_exceeds_possible_fails() {
     // With 3 terms and frag_len=1, max possible length is 3
     req.max_len = 4; // This should fail
     assert!(validate_generate_request(&req).is_err());
-    
+
     // With 3 terms and frag_len=2, max possible length is 6
     req.frag_len = 2;
     req.max_len = 7; // This should fail

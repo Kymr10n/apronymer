@@ -7,27 +7,27 @@ mod tests {
     }
 }
 // Main entry point for the backend server
-use axum::{Router, serve};
-use tower_http::trace::TraceLayer; // For request/response logging
-use tower_http::cors::{CorsLayer, Any}; // For CORS support
-use std::net::SocketAddr;
-use tokio::net::TcpListener;
-use tracing_subscriber::{fmt, EnvFilter}; // For logging
+use axum::{serve, Router};
 use std::env;
+use std::net::SocketAddr;
 use std::time::Duration;
+use tokio::net::TcpListener;
+use tower_http::cors::{Any, CorsLayer}; // For CORS support
+use tower_http::trace::TraceLayer; // For request/response logging
+use tracing_subscriber::{fmt, EnvFilter}; // For logging
 
-mod routes;      // API route handlers
-mod validator;   // Request validation logic
-mod generator;   // Apronym generation logic
-mod dictionary;  // Dictionary lookup logic
-mod rate_limiter; // Rate limiting middleware
+mod dictionary; // Dictionary lookup logic
+mod generator; // Apronym generation logic
+mod rate_limiter;
+mod routes; // API route handlers
+mod validator; // Request validation logic // Rate limiting middleware
 
 use rate_limiter::{RateLimiter, RateLimiterConfig};
 
 /// Middleware to check API key in request header
 async fn require_api_key(
     req: axum::http::Request<axum::body::Body>,
-    next: axum::middleware::Next
+    next: axum::middleware::Next,
 ) -> Result<axum::response::Response, axum::http::StatusCode> {
     // Get API key from environment
     let expected_key = std::env::var("API_KEY").unwrap_or_default();
@@ -61,10 +61,26 @@ async fn main() {
 
     tracing::info!("🚀 Starting Apronymer Backend Server");
     tracing::info!("📋 Environment variables:");
-    tracing::info!("  - HOST: {}", env::var("HOST").unwrap_or_else(|_| "127.0.0.1 (default)".to_string()));
-    tracing::info!("  - PORT: {}", env::var("PORT").unwrap_or_else(|_| "3000 (default)".to_string()));
-    tracing::info!("  - RUST_LOG: {}", env::var("RUST_LOG").unwrap_or_else(|_| "not set".to_string()));
-    tracing::info!("  - API_KEY: {}", if env::var("API_KEY").is_ok() { "✅ set" } else { "❌ not set" });
+    tracing::info!(
+        "  - HOST: {}",
+        env::var("HOST").unwrap_or_else(|_| "127.0.0.1 (default)".to_string())
+    );
+    tracing::info!(
+        "  - PORT: {}",
+        env::var("PORT").unwrap_or_else(|_| "3000 (default)".to_string())
+    );
+    tracing::info!(
+        "  - RUST_LOG: {}",
+        env::var("RUST_LOG").unwrap_or_else(|_| "not set".to_string())
+    );
+    tracing::info!(
+        "  - API_KEY: {}",
+        if env::var("API_KEY").is_ok() {
+            "✅ set"
+        } else {
+            "❌ not set"
+        }
+    );
 
     // Get host and port from environment or use defaults
     let host = env::var("HOST").expect("❌ HOST environment variable is missing");
@@ -72,7 +88,7 @@ async fn main() {
         .expect("❌ PORT environment variable is missing")
         .parse()
         .expect("❌ PORT must be a valid integer");
-    
+
     tracing::info!("🌐 Binding to {}:{}", host, port);
     let addr = match format!("{host}:{port}").parse::<SocketAddr>() {
         Ok(addr) => addr,
@@ -81,19 +97,23 @@ async fn main() {
             std::process::exit(1);
         }
     };
-    
+
     match TcpListener::bind(addr).await {
         Ok(listener) => {
             tracing::info!("✅ Successfully bound to {}", addr);
-            
+
             // Initialize dictionary and check stats
             tracing::info!("🔄 Checking dictionary status...");
             let (word_count, has_words) = dictionary::get_dictionary_stats();
             if has_words {
                 tracing::info!("✅ Dictionary ready with {} words", word_count);
             } else {
-                tracing::error!("❌ Dictionary is empty or unavailable! Apronym generation will fail.");
-                tracing::error!("🔧 Please check that the wordlist file is properly mounted in the container.");
+                tracing::error!(
+                    "❌ Dictionary is empty or unavailable! Apronym generation will fail."
+                );
+                tracing::error!(
+                    "🔧 Please check that the wordlist file is properly mounted in the container."
+                );
             }
 
             // Initialize rate limiter
@@ -109,18 +129,28 @@ async fn main() {
             // Build the Axum app with health endpoint accessible and API routes protected
             let app = Router::new()
                 .route("/health", axum::routing::get(routes::health)) // Health endpoint without API key or rate limiting
-                .nest("/api", 
+                .nest(
+                    "/api",
                     routes::routes()
-                        .layer(axum::middleware::from_fn(rate_limiter::rate_limit_middleware)) // Rate limiting first
-                        .layer(axum::middleware::from_fn(require_api_key)) // Then API key check
+                        .layer(axum::middleware::from_fn(
+                            rate_limiter::rate_limit_middleware,
+                        )) // Rate limiting first
+                        .layer(axum::middleware::from_fn(require_api_key)), // Then API key check
                 )
                 .layer(axum::Extension(rate_limiter)) // Add rate limiter to all routes
                 .layer(TraceLayer::new_for_http()) // Add request logging
                 .layer(
                     CorsLayer::new()
                         .allow_origin(Any) // Allow all origins (customize for production)
-                        .allow_methods([axum::http::Method::GET, axum::http::Method::POST, axum::http::Method::OPTIONS])
-                        .allow_headers([axum::http::header::CONTENT_TYPE, axum::http::header::HeaderName::from_static("x-api-key")])
+                        .allow_methods([
+                            axum::http::Method::GET,
+                            axum::http::Method::POST,
+                            axum::http::Method::OPTIONS,
+                        ])
+                        .allow_headers([
+                            axum::http::header::CONTENT_TYPE,
+                            axum::http::header::HeaderName::from_static("x-api-key"),
+                        ]),
                 );
 
             tracing::info!("🎯 Server ready! Listening on http://{}", addr);

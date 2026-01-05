@@ -1,15 +1,15 @@
 // ...existing code...
+use once_cell::sync::Lazy;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use once_cell::sync::Lazy;
 use std::sync::RwLock;
 
 /// Global dictionary loaded once at startup
 static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
     println!("🔄 Initializing dictionary...");
     let mut set = HashSet::new();
-    
+
     // Use container path if it exists, otherwise use local development path
     let dict_path = if std::path::Path::new("/app/wordlist/words.txt").exists() {
         "/app/wordlist/words.txt"
@@ -17,13 +17,13 @@ static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
         "./wordlist/words.txt"
     };
     println!("📖 Loading dictionary from: {dict_path}");
-    
+
     match File::open(dict_path) {
         Ok(file) => {
             println!("✅ Dictionary file opened successfully");
             let reader = BufReader::new(file);
             let mut word_count = 0;
-            
+
             for (line_num, line) in reader.lines().enumerate() {
                 match line {
                     Ok(word) => {
@@ -38,7 +38,7 @@ static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
                     }
                 }
             }
-            
+
             println!("✅ Dictionary loaded successfully with {word_count} words");
             if word_count == 0 {
                 println!("❌ Dictionary is empty! This will cause apronym generation to fail");
@@ -46,8 +46,11 @@ static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
         }
         Err(e) => {
             println!("❌ Failed to open dictionary file '{dict_path}': {e}");
-            println!("💡 Current working directory: {:?}", std::env::current_dir());
-            
+            println!(
+                "💡 Current working directory: {:?}",
+                std::env::current_dir()
+            );
+
             // Try to list the directory to see what's there
             if let Ok(entries) = std::fs::read_dir("/app") {
                 println!("📁 Contents of /app directory:");
@@ -55,7 +58,7 @@ static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
                     println!("  - {:?}", entry.path());
                 }
             }
-            
+
             if let Ok(entries) = std::fs::read_dir("/app/wordlist") {
                 println!("📁 Contents of /app/wordlist directory:");
                 for entry in entries.flatten() {
@@ -64,11 +67,11 @@ static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
             } else {
                 println!("❌ /app/wordlist directory does not exist or cannot be read");
             }
-            
+
             println!("🚨 Dictionary loading failed - apronym generation will not work!");
         }
     }
-    
+
     RwLock::new(set)
 });
 
@@ -106,6 +109,9 @@ mod tests {
         // The dictionary should load and contain at least one word (if words.txt is present)
         let dict = DICTIONARY.read().unwrap();
         // This test passes if the dictionary is not empty
-        assert!(!dict.is_empty(), "Dictionary should not be empty if words.txt is present");
+        assert!(
+            !dict.is_empty(),
+            "Dictionary should not be empty if words.txt is present"
+        );
     }
 }
