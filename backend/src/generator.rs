@@ -2,6 +2,9 @@ use itertools::Itertools;
 use rayon::prelude::*;
 use crate::{dictionary::is_valid_word, routes::Apronym};
 
+/// Default maximum number of results to return
+pub const DEFAULT_MAX_RESULTS: usize = 100;
+
 /// Generate possible apronyms based on input terms (optimized version)
 /// 
 /// This function creates apronyms by taking variable-length prefixes from each term
@@ -14,12 +17,15 @@ use crate::{dictionary::is_valid_word, routes::Apronym};
 /// * `max_len` - Maximum number of terms to use in each apronym
 /// 
 /// # Returns
-/// Vector of valid apronyms that exist in the dictionary
+/// Vector of valid apronyms that exist in the dictionary (limited to DEFAULT_MAX_RESULTS)
 pub fn generate_apronyms(terms: Vec<String>, frag_len: usize, min_len: usize, max_len: usize) -> Vec<Apronym> {
-    generate_apronyms_with_limit(terms, frag_len, min_len, max_len, 100) // Default limit of 100 results
+    generate_apronyms_with_limit(terms, frag_len, min_len, max_len, DEFAULT_MAX_RESULTS)
 }
 
 /// Generate apronyms with a configurable result limit for performance optimization
+/// 
+/// This function is primarily used for testing with custom limits.
+/// For normal use, prefer `generate_apronyms` which uses DEFAULT_MAX_RESULTS.
 pub fn generate_apronyms_with_limit(
     terms: Vec<String>, 
     frag_len: usize, 
