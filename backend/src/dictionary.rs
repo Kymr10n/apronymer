@@ -3,10 +3,9 @@ use once_cell::sync::Lazy;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::sync::RwLock;
 
 /// Global dictionary loaded once at startup
-static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
+static DICTIONARY: Lazy<HashSet<String>> = Lazy::new(|| {
     println!("🔄 Initializing dictionary...");
     let mut set = HashSet::new();
 
@@ -72,34 +71,19 @@ static DICTIONARY: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| {
         }
     }
 
-    RwLock::new(set)
+    set
 });
 
 /// Get dictionary statistics for debugging
 pub fn get_dictionary_stats() -> (usize, bool) {
-    match DICTIONARY.read() {
-        Ok(dict) => {
-            let size = dict.len();
-            let has_words = size > 0;
-            (size, has_words)
-        }
-        Err(e) => {
-            tracing::error!("Failed to read dictionary stats: {}", e);
-            (0, false)
-        }
-    }
+    let size = DICTIONARY.len();
+    let has_words = size > 0;
+    (size, has_words)
 }
 
 /// Check if word exists in dictionary
-/// Returns false if dictionary access fails (defensive programming)
 pub fn is_valid_word(word: &str) -> bool {
-    match DICTIONARY.read() {
-        Ok(dict) => dict.contains(&word.to_uppercase()),
-        Err(e) => {
-            tracing::error!("Dictionary lock poisoned: {}", e);
-            false // Fail safely - don't crash the server
-        }
-    }
+    DICTIONARY.contains(&word.to_uppercase())
 }
 #[cfg(test)]
 mod tests {
@@ -107,7 +91,7 @@ mod tests {
     #[test]
     fn test_dictionary_loads_and_contains_word() {
         // The dictionary should load and contain at least one word (if words.txt is present)
-        let dict = DICTIONARY.read().unwrap();
+        let dict = &*DICTIONARY;
         // This test passes if the dictionary is not empty
         assert!(
             !dict.is_empty(),
