@@ -5,6 +5,15 @@ use crate::{dictionary::is_valid_word, routes::Apronym};
 /// Default maximum number of results to return
 pub const DEFAULT_MAX_RESULTS: usize = 100;
 
+/// Minimum total combinations to trigger parallel processing
+const PARALLEL_COMBINATIONS_THRESHOLD: usize = 1000;
+
+/// Minimum permutation count to trigger parallel processing
+const PARALLEL_PERMUTATIONS_THRESHOLD: usize = 10;
+
+/// Maximum combinations per permutation (safety limit)
+const MAX_COMBINATIONS_PER_PERMUTATION: usize = 10_000;
+
 /// Generate possible apronyms based on input terms (optimized version)
 /// 
 /// This function creates apronyms by taking variable-length prefixes from each term
@@ -54,7 +63,8 @@ pub fn generate_apronyms_with_limit(
     }
 
     // Use adaptive processing: parallel for large workloads, sequential for small ones
-    let use_parallel = total_combinations > 1000 || permutations.len() > 10;
+    let use_parallel = total_combinations > PARALLEL_COMBINATIONS_THRESHOLD 
+        || permutations.len() > PARALLEL_PERMUTATIONS_THRESHOLD;
     
     let matches = if use_parallel {
         tracing::debug!("Using parallel processing for large workload");
@@ -95,8 +105,9 @@ fn generate_parallel(
             let total_combinations = frag_len.pow(perm.len() as u32);
             
             // Safety check: prevent potential overflow or excessive computation
-            if total_combinations > 10_000 {
-                tracing::warn!("Skipping permutation with {} combinations (exceeds safety limit)", total_combinations);
+            if total_combinations > MAX_COMBINATIONS_PER_PERMUTATION {
+                tracing::warn!("Skipping permutation with {} combinations (exceeds safety limit of {})", 
+                    total_combinations, MAX_COMBINATIONS_PER_PERMUTATION);
                 return None;
             }
             
@@ -141,8 +152,9 @@ fn generate_sequential(
         let total_combinations = frag_len.pow(perm.len() as u32);
         
         // Safety check: prevent potential overflow or excessive computation
-        if total_combinations > 10_000 {
-            tracing::warn!("Skipping permutation with {} combinations (exceeds safety limit)", total_combinations);
+        if total_combinations > MAX_COMBINATIONS_PER_PERMUTATION {
+            tracing::warn!("Skipping permutation with {} combinations (exceeds safety limit of {})", 
+                total_combinations, MAX_COMBINATIONS_PER_PERMUTATION);
             continue;
         }
         
