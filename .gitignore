@@ -52,3 +52,11 @@ pnpm-debug.log*
 target/debug/
 /target/
 target/.rustc_info.json
+
+# --------------------
+# Profiling & Performance Analysis
+# --------------------
+*.svg                  # Flamegraphs
+perf.data
+perf*.data
+*.old                  # Backup files
