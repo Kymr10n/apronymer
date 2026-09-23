@@ -16,6 +16,7 @@ use tower_http::cors::{Any, CorsLayer}; // For CORS support
 use tower_http::trace::TraceLayer; // For request/response logging
 use tracing_subscriber::{fmt, EnvFilter}; // For logging
 
+mod analytics; // Behavioral analytics logging (IP, User-Agent, Referrer)
 mod dictionary; // Dictionary lookup logic
 mod generator; // Apronym generation logic
 mod rate_limiter;
@@ -138,6 +139,7 @@ async fn main() {
                         .layer(axum::middleware::from_fn(require_api_key)), // Then API key check
                 )
                 .layer(axum::Extension(rate_limiter)) // Add rate limiter to all routes
+                .layer(axum::middleware::from_fn(analytics::analytics_middleware)) // Behavioral analytics logging
                 .layer(TraceLayer::new_for_http()) // Add request logging
                 .layer(
                     CorsLayer::new()

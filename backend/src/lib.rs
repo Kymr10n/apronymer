@@ -1,6 +1,7 @@
 // Library exports for the apronymer backend
 // This allows integration tests to access internal modules
 
+pub mod analytics;
 pub mod dictionary;
 pub mod generator;
 pub mod rate_limiter;
