@@ -157,8 +157,13 @@ async fn main() {
             tracing::info!("🏥 Health endpoint: http://{}/health", addr);
             tracing::info!("🔗 API endpoints: http://{}/api/*", addr);
 
-            // Start the server
-            if let Err(e) = serve(listener, app).await {
+            // Start the server (with ConnectInfo so the rate limiter can see real client IPs)
+            if let Err(e) = serve(
+                listener,
+                app.into_make_service_with_connect_info::<SocketAddr>(),
+            )
+            .await
+            {
                 tracing::error!("❌ Server failed: {}", e);
                 std::process::exit(1);
             }
